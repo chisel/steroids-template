@@ -206,8 +206,8 @@ Now let's get crazy! Let's write a validator which requires the following JSON b
 | Key | Requirement |
 |:----|:------------|
 | title | Must be present and a valid string. |
-| authors | Must be present and a valid array of strings with at least on entry. |
-| co-authors | Optional, but if present, is has the same requirement as `authors` but all entries must be prefixed with `co-`! |
+| authors | Must be present and a valid array of strings with at least one entry. |
+| co-authors | Optional, but if present, it has the same requirement as `authors` but all entries must be prefixed with `co-`! |
 | release | A namespace. |
 | release.year | Must be a valid number between `2000` and `2019`. |
 | release.sells | Must be a valid number. |
