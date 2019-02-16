@@ -1,0 +1,30 @@
+{
+  "name": "ts-server",
+  "version": "0.0.0",
+  "description": "TypeScript server infrastructure/template.",
+  "main": "main.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/ramtinsoltani/ts-server.git"
+  },
+  "keywords": [
+    "typescript",
+    "server",
+    "nodejs",
+    "node.js",
+    "template",
+    "infrastructure",
+    "rxjs",
+    "observables",
+    "framework"
+  ],
+  "author": "Ramtin Soltani <ramtinsoltani93@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ramtinsoltani/ts-server/issues"
+  },
+  "homepage": "https://github.com/ramtinsoltani/ts-server#readme"
+}
