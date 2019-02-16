@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./src",
+    "outDir": "./dist",
+    "experimentalDecorators": true,
+    "target": "es5",
+    "moduleResolution": "Node",
+    "typeRoots": ["node_modules/@types"]
+  }
+}

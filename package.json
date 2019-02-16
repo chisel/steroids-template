@@ -1,10 +1,12 @@
 {
   "name": "ts-server",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "TypeScript server infrastructure/template.",
   "main": "main.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "node pre-processing.js && npx tsc --build && node post-processing.js",
+    "launch": "node dist/main.js",
+    "start": "node pre-processing.js && npx tsc --build && node post-processing.js && node dist/main.js"
   },
   "repository": {
     "type": "git",
@@ -13,18 +15,35 @@
   "keywords": [
     "typescript",
     "server",
-    "nodejs",
-    "node.js",
+    "node js",
     "template",
     "infrastructure",
-    "rxjs",
-    "observables",
-    "framework"
+    "framework",
+    "validation",
+    "scalable",
+    "fast",
+    "development"
   ],
   "author": "Ramtin Soltani <ramtinsoltani93@gmail.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/ramtinsoltani/ts-server/issues"
   },
-  "homepage": "https://github.com/ramtinsoltani/ts-server#readme"
+  "homepage": "https://github.com/ramtinsoltani/ts-server#readme",
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "chalk": "^2.4.2",
+    "express": "^4.16.4",
+    "fs-extra": "^7.0.1",
+    "lodash": "^4.17.11"
+  },
+  "devDependencies": {
+    "@types/body-parser": "^1.17.0",
+    "@types/express": "^4.16.1",
+    "@types/fs-extra": "^5.0.5",
+    "@types/lodash": "^4.14.121",
+    "@types/node": "^11.9.4",
+    "typescript": "^3.3.3",
+    "uglify-es": "^3.3.9"
+  }
 }
