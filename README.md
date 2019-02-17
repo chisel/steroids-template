@@ -265,7 +265,7 @@ Here's a more in-depth documentation on all the built-in body validator function
 | type.number | NA | Checks if the value is a valid number. |
 | type.boolean | NA | Checks if the value is a valid boolean. |
 | type.nil | NA | Checks if the value is null. |
-| type.array | type.array(_[validator, arrayValidator]_) | Checks if the value is a valid array. If the validator is provided, it also validates each item of the array against it, if the arrayValidator is provided, the whole array is validated against it. |
+| type.array | type.array(_[validator, arrayValidator]_) | Checks if the value is a valid array. If the validator is provided, it also validates each item of the array against it, if the arrayValidator is provided, the array itself is validated against it (useful for enforcing length restrictions on the array). |
 | equal | equal(val) | Checks if the body value is equal to the given value. |
 | or | or(...validators) | ORs all given validators. |
 | and | and(...validators) | ANDs all given validators. |
