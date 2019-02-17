@@ -104,7 +104,7 @@ The `@Router` decorator accepts the following properties:
 |:----|:----:|:------------|
 | name | string | The name of the router (only used for logging). |
 | priority | number | Routers are sorted by priority before mounting their middleware in the Express stack (defaults to `0`). |
-| routes | Array<RouteDefinition> | An array of route definitions. |
+| routes | RouteDefinition[] | An array of route definitions. |
 
 The `RouteDefinition` interface is as follows:
 
@@ -113,7 +113,7 @@ The `RouteDefinition` interface is as follows:
 | path | string | Yes | The path of the route (identical to app.use(**path**)). |
 | handler | string | Yes | The name of the route handler function (must exist in the router class). |
 | method | RouteMethod | No | The HTTP method of the route. If not provided, the route will cover all methods (global). |
-| validate | Array<ValidationRule> | No | Used to easily install validators for validating input (body, header, etc.) |
+| validate | ValidationRule[] | No | Used to easily install validators for validating input (body, header, etc.) |
 
 The following is an example of a simple router which defines the route `GET /test` linked to the `Router1.routeHandler1` route handler:
 
@@ -255,6 +255,30 @@ export class Router1 {
 }
 ```
 
+#### Body Validation API
+
+Here's a more in-depth documentation on all the built-in body validator functions:
+
+| Validator | Signature | Description |
+|:----------|:----------|:------------|
+| type.string | NA | Checks if the value is a valid string. |
+| type.number | NA | Checks if the value is a valid number. |
+| type.boolean | NA | Checks if the value is a valid boolean. |
+| type.nil | NA | Checks if the value is null. |
+| type.array | type.array(_[validator, arrayValidator]_) | Checks if the value is a valid array. If the validator is provided, it also validates each item of the array against it, if the arrayValidator is provided, the whole array is validated against it. |
+| equal | equal(val) | Checks if the body value is equal to the given value. |
+| or | or(...validators) | ORs all given validators. |
+| and | and(...validators) | ANDs all given validators. |
+| not | not(validator) | Negates the given validator. |
+| opt | opt(validator) | Applies the given validator only if the value is present (makes the value optional). |
+| match | match(regex) | Validates the value against the given regular expression (without string type check). |
+| num.min | num.min(val) | Checks if the value is greater than or equal to the given number. |
+| num.max | num.max(val) | Checks if the value is less than or equal to the given number. |
+| num.range | num.range(min, max) | Checks if the value is between the given range (inclusive). |
+| len.min | len.min(val) | Checks if the length of the value is greater than or equal to the given number. |
+| len.max | len.max(val) | Checks if the length of the value is less than or equal to the given number. |
+| len.range | len.range(min, max) | Checks if the length of the value is between the given range (inclusive). |
+
 #### Custom Validation
 
 If you need to do something more complex or unique and still want to benefit from reusability and the auto-respond feature of the validators, you can create a function with this signature `(req: Request) => boolean` and pass it to the `custom` method:
@@ -341,4 +365,3 @@ const error = new ServerError('Message', 'ERROR_CODE'); // Code defaults to 'UNK
   - You can see some more detailed examples inside the sample files in `services` and `routers` directories.
   - The directory structure of the server is totally up to you, since the server scans the `src` for `.service.js` and `.router.js` files to install at any depth.
   - You can make your validators modular by storing the validator functions and the validator body definitions inside other files and reuse them everywhere.
-  -
