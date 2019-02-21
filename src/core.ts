@@ -9,6 +9,8 @@ import {
   BodyValidator
 } from './models';
 
+import * as _ from 'lodash';
+
 export * from './models';
 
 export function Service(config: ModuleDecoratorArgs) {
@@ -91,6 +93,42 @@ export namespace type {
     };
 
   }
+
+  /**
+  * Enum type comparison.
+  * @param enumerator An enumerator to validate the value against.
+  */
+  export function ofenum(enumerator: any): ValidatorFunction {
+
+    return (value: any): boolean => {
+
+      return _.values(enumerator).includes(value);
+
+    };
+
+  }
+
+}
+
+/**
+* Validates an object against the given flat body validator (useful for validating arrays of objects).
+* @param bodyValidator A flat body validator.
+*/
+export function sub(bodyValidator: BodyValidator): ValidatorFunction {
+
+  return (value: any): boolean => {
+
+    if ( ! value || typeof value !== 'object' || value.constructor !== Object ) return false;
+
+    for ( const key of _.keys(bodyValidator) ) {
+
+      if ( ! value.hasOwnProperty(key) || ! (<ValidatorFunction>bodyValidator[key])(value[key]) ) return false;
+
+    }
+
+    return true;
+
+  };
 
 }
 

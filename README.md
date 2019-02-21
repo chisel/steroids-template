@@ -255,9 +255,87 @@ export class Router1 {
 }
 ```
 
+#### Body Validation: Enums
+
+Properties of the body object can be checked against any enums (including string enums) using the `type.ofenum` validator:
+
+```ts
+import {
+  Router,
+  RouteMethod,
+  body,
+  type
+} from './core';
+
+enum Category {
+  Category1,
+  Category2
+}
+
+@Router({
+  name: 'router1',
+  priority: 100,
+  routes: [
+    { path: '/test', handler: 'testHandler', method: RouteMethod.POST, validate: [
+      body({
+        category: type.ofenum(Category)
+      })
+    ]}
+  ]
+})
+export class Router1 {
+
+  testHandler(req, res) {
+
+    // req.body has passed the validation test
+
+  }
+
+}
+```
+
+#### Body Validation: Arrays Of Objects
+
+An array of objects can be validated using the `sub` validator. It takes a body validator object (the same object the `body` function takes except there can be no nested objects) and validates all the items inside the array against it:
+
+```ts
+import {
+  Router,
+  RouteMethod,
+  body,
+  type,
+  sub,
+  len
+} from './core';
+
+@Router({
+  name: 'router1',
+  priority: 100,
+  routes: [
+    { path: '/test', handler: 'testHandler', method: RouteMethod.POST, validate: [
+      body({
+        authors: type.array(sub({
+          firstName: type.string,
+          lastName: type.string
+        }), len.min(1))
+      })
+    ]}
+  ]
+})
+export class Router1 {
+
+  testHandler(req, res) {
+
+    // req.body has passed the validation test
+
+  }
+
+}
+```
+
 #### Body Validation API
 
-Here's a more in-depth documentation on all the built-in body validator functions:
+Here's an in-depth documentation on all the built-in body validator functions:
 
 | Validator | Signature | Description |
 |:----------|:----------|:------------|
@@ -266,6 +344,7 @@ Here's a more in-depth documentation on all the built-in body validator function
 | type.boolean | NA | Checks if the value is a valid boolean. |
 | type.nil | NA | Checks if the value is null. |
 | type.array | type.array(_[validator, arrayValidator]_) | Checks if the value is a valid array. If the validator is provided, it also validates each item of the array against it, if the arrayValidator is provided, the array itself is validated against it (useful for enforcing length restrictions on the array). |
+| type.ofenum | type.ofenum(enumerator) | Checks if the value is included in the given enumerator.|
 | equal | equal(val) | Checks if the body value is equal to the given value. |
 | or | or(...validators) | ORs all given validators. |
 | and | and(...validators) | ANDs all given validators. |
@@ -278,6 +357,60 @@ Here's a more in-depth documentation on all the built-in body validator function
 | len.min | len.min(val) | Checks if the length of the value is greater than or equal to the given number. |
 | len.max | len.max(val) | Checks if the length of the value is less than or equal to the given number. |
 | len.range | len.range(min, max) | Checks if the length of the value is between the given range (inclusive). |
+| sub | sub(bodyValidator) | Validates an object against the given flat body validator (useful for validating arrays of objects). |
+
+#### Custom Body Validation
+
+If you need to perform a more complex body validation, you can always create a validator function or factory that takes arguments and returns a validator function. Below is an example of a custom body validator which validates the property `oddOnly` on the body using a validator function and `evenOnly` using a validator factory:
+
+```ts
+import {
+  Router,
+  RouteMethod,
+  body,
+  type,
+  ValidatorFunction
+} from './core';
+
+@Router({
+  name: 'router1',
+  priority: 100,
+  routes: [
+    { path: '/test', handler: 'testHandler', method: RouteMethod.POST, validate: [
+      body({
+        oddOnly: odd,
+        evenOnly: parity(false)
+      })
+    ]}
+  ]
+})
+export class Router1 {
+
+  testHandler(req, res) {
+
+    // req.body has passed the validation test
+
+  }
+
+}
+
+function odd(value: any): boolean {
+
+  // Reusing type.number validator function
+  return type.number(value) && (value % 2 === 1);
+
+}
+
+function parity(odd: boolean): ValidatorFunction {
+
+  return (value: any): boolean => {
+
+    return type.number(value) && (value % 2 === (odd ? 1 : 0));
+
+  };
+
+}
+```
 
 #### Custom Validation
 
@@ -343,6 +476,22 @@ class implements OnConfig {
     // Inject or use...
   }
 
+}
+```
+
+## Server Assets
+
+Assets can be declared inside `package.json` using the `assets` array. Any files inside the array will be copied to the `dist` folder after the server build. Keep in mind that all paths should be relative to the `src` directory.
+
+### Assets Example
+
+```json
+{
+  "name": "ts-server",
+  ...
+  "assets": [
+    "firebase.certificate.json"
+  ]
 }
 ```
 

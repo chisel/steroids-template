@@ -153,10 +153,12 @@ function bodyValidation(bodyValidator: BodyValidator, body: any, prefix: string 
 
       const validator: ValidatorFunction = <ValidatorFunction>bodyValidator[key];
 
-      if ( ! validator(body[key]) ) return new Error(`Invalid property "${keyPath}" on body!`);
+      if ( ! validator(body[key]) ) return new Error(`Invalid property '${keyPath}' on body!`);
 
     }
     else {
+
+      if ( ! body.hasOwnProperty(key) || ! body[key] || typeof body[key] !== 'object' || body[key].constructor !== Object ) return new Error(`Invalid property '${keyPath}' on body!`);
 
       const error = bodyValidation(<BodyValidator>bodyValidator[key], body[key], keyPath);
 
