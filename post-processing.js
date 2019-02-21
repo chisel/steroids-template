@@ -56,7 +56,7 @@ files.map(file => {
 
   const content = fs.readFileSync(file, { encoding: 'utf8' });
 
-  const result = uglify.minify(content);
+  const result = uglify.minify(content, { mangle: { toplevel: true } });
 
   if ( result.error ) {
 
