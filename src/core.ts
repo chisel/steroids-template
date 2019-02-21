@@ -6,7 +6,8 @@ import {
   ValidationRule,
   ValidatorFunction,
   HeaderValidator,
-  BodyValidator
+  BodyValidator,
+  FlatBodyValidator
 } from './models';
 
 import * as _ from 'lodash';
@@ -114,7 +115,7 @@ export namespace type {
 * Validates an object against the given flat body validator (useful for validating arrays of objects).
 * @param bodyValidator A flat body validator.
 */
-export function sub(bodyValidator: BodyValidator): ValidatorFunction {
+export function sub(bodyValidator: FlatBodyValidator): ValidatorFunction {
 
   return (value: any): boolean => {
 
@@ -122,7 +123,7 @@ export function sub(bodyValidator: BodyValidator): ValidatorFunction {
 
     for ( const key of _.keys(bodyValidator) ) {
 
-      if ( ! value.hasOwnProperty(key) || ! (<ValidatorFunction>bodyValidator[key])(value[key]) ) return false;
+      if ( ! value.hasOwnProperty(key) || ! bodyValidator[key](value[key]) ) return false;
 
     }
 

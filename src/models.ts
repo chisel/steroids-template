@@ -105,4 +105,10 @@ export interface BodyValidator {
 
 }
 
+export interface FlatBodyValidator {
+
+  [key: string]: ValidatorFunction
+
+}
+
 export type ValidatorFunction = (value: any) => boolean;
