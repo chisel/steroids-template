@@ -183,7 +183,7 @@ function createValidationMiddleware(route: RouteDefinition): RequestHandler {
           const header = req.header(key);
 
           if ( ! header || header.toLowerCase().trim() !== rule.validator[key].toLowerCase().trim() )
-            return rejectForValidation(res, `Invalid header "${ key }"!`);
+            return rejectForValidation(res, `Invalid header '${ key }'!`);
 
         }
 
@@ -192,7 +192,7 @@ function createValidationMiddleware(route: RouteDefinition): RequestHandler {
 
         for ( const query of <string[]>rule.validator ) {
 
-          if ( ! req.query[query] ) return rejectForValidation(res, `Missing query parameter "${query}"!`);
+          if ( ! req.query[query] ) return rejectForValidation(res, `Missing query parameter '${query}'!`);
 
         }
 
@@ -249,7 +249,7 @@ app.use((error, req, res, next) => {
 });
 
 // Sort routers based on priority
-routers = _.sortBy(routers, (router: BasicModule) => router.__metadata.priority);
+routers = _.orderBy(routers, (router: BasicModule) => router.__metadata.priority, ['desc']);
 
 // Install routes
 for ( const name in routers ) {
