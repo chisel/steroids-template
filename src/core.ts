@@ -10,7 +10,7 @@ import {
   FlatBodyValidator
 } from './models';
 
-import * as _ from 'lodash';
+import _ from 'lodash';
 
 export * from './models';
 

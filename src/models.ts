@@ -1,15 +1,12 @@
-///////////////////////////////////
-/////// SERVER CONFIG MODEL ///////
-///////////////////////////////////
-export interface ServerConfig {
+import { ServerConfig } from './config.model';
+export { ServerConfig } from './config.model';
+
+export interface BaseServerConfig {
 
   port?: number;
   verboseLogs?: boolean;
 
 }
-///////////////////////////////////
-///////////////////////////////////
-///////////////////////////////////
 
 export interface ModuleDecoratorArgs {
 

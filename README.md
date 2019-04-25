@@ -461,7 +461,7 @@ The server has a configuration file located at `src/config.json` with the follow
 
 ### Config Expansion
 
-You can expand the config object typing by editing the `ServerConfig` model inside `src/models.ts`.
+You can expand the config object typing by editing the `ServerConfig` model inside `src/config.model.ts`.
 
 ### Config Injection
 

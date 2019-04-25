@@ -1,16 +1,17 @@
 // This script builds the app and starts the server
-import * as _ from 'lodash';
-import * as fs from 'fs-extra';
-import * as path from 'path';
-import * as express from 'express';
-import * as bodyParser from 'body-parser';
+import _ from 'lodash';
+import fs from 'fs-extra';
+import path from 'path';
+import express from 'express';
+import bodyParser from 'body-parser';
 import chalk from 'chalk';
+import serverConfig from './config.json';
 
 import { RequestHandler, Request, Response, NextFunction } from 'express';
 
 import {
   ServerError,
-  ServerConfig,
+  BaseServerConfig,
   BasicModule,
   ModuleType,
   RouteDefinition,
@@ -20,26 +21,13 @@ import {
   ValidatorFunction
 } from './core';
 
-const CONFIG_DEFAULT: ServerConfig = {
+const CONFIG_DEFAULT: BaseServerConfig = {
   port: 5000,
   verboseLogs: true
 };
 
-// Load the config file
-let config: ServerConfig = {};
-
-try {
-
-  config = fs.readJSONSync(path.join(__dirname, 'config.json'));
-
-}
-catch (error) {
-
-  console.log(chalk.redBright.bold('Could not find config file!'));
-
-}
-
-config = _.merge(CONFIG_DEFAULT, config);
+// Override the config file
+let config = _.merge(CONFIG_DEFAULT, serverConfig);
 
 const app = express();
 const services: any = {};
