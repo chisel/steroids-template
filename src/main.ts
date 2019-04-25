@@ -23,7 +23,8 @@ import {
 
 const CONFIG_DEFAULT: BaseServerConfig = {
   port: 5000,
-  verboseLogs: true
+  verboseLogs: true,
+  predictive404: false
 };
 
 // Override the config file
@@ -223,6 +224,30 @@ for ( const file of files ) {
 injectServices(services);
 injectServices(routers);
 
+// Install predictive 404 handler
+if ( config.predictive404 ) {
+
+  app.use('*', (req, res, next) => {
+
+    let matches: number = 0;
+
+    app._router.stack.map(layer => {
+
+      if ( layer.regexp.fast_star || layer.regexp.fast_slash ) return;
+
+      if ( layer.match(req.originalUrl) ) matches++;
+
+    });
+
+    if ( matches ) next();
+    else res.status(404).json(new ServerError(`Route ${req.originalUrl} not found!`, 'ROUTE_NOT_FOUND'));
+
+  });
+
+  if ( config.verboseLogs ) console.log(chalk.yellowBright.bold('Predictive 404 handler installed'));
+
+}
+
 // Install body parsers
 app.use(bodyParser.text());
 app.use(bodyParser.json());
@@ -304,11 +329,17 @@ for ( const name in routers ) {
 }
 
 // Install 404 router
-app.use('*', (req, res) => {
+if ( ! config.predictive404 ) {
+
+  app.use('*', (req, res) => {
 
   res.status(404).json(new ServerError(`Route ${req.originalUrl} not found!`, 'ROUTE_NOT_FOUND'));
 
 });
+
+  if ( config.verboseLogs ) console.log(chalk.yellowBright.bold('404 handler installed'));
+
+}
 
 // Install error handler
 app.use((error, req, res, next) => {

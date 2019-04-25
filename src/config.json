@@ -1,4 +1,5 @@
 {
   "port": 5000,
-  "verboseLogs": true
+  "verboseLogs": true,
+  "predictive404": false
 }

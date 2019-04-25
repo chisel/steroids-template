@@ -460,6 +460,7 @@ The server has a configuration file located at `src/config.json` with the follow
 |:----|:----:|:------------|
 | port | number | The port number to launch the server on (defaults to `5000`). |
 | verboseLogs | boolean | Shows startup logs and route-specific logs (defaults to `true`). |
+| predictive404 | boolean | If true, installs a 404 handler at the top of the stack instead, which predicts if path will match with any middleware in the stack and rejects the request with a 404 error if not. This is useful as requests that will eventually result in a 404 error won't go through the stack in the first place. Please note that the prediction ignores all `*` and `/` routes (defaults to `false`). |
 
 ### Config Expansion
 
