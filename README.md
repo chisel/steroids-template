@@ -11,6 +11,7 @@ This repository contains a Node.js server infrastructure/template ready for use 
   - Ability to extend the validation logic with custom validators
   - Dynamic route and service installation
   - Dynamic service injection without circular dependency issues
+  - TypeDoc ready
 
 The purpose of this repository is mainly reusability and a kick start to developing backend solutions with TypeScript.
 
@@ -25,6 +26,7 @@ The purpose of this repository is mainly reusability and a kick start to develop
   - `npm run build`: Build the server into `dist`.
   - `npm run launch`: Runs the last build.
   - `npm run start`: Builds and runs the server.
+  - `npm run docs`: Builds the internal documentation.
 
 # Development
 
