@@ -1,6 +1,6 @@
 {
   "name": "ts-server",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "description": "TypeScript server infrastructure/template.",
   "main": "main.ts",
   "scripts": {
