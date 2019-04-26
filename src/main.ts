@@ -369,9 +369,12 @@ if ( ! config.predictive404 ) {
 app.use((error, req, res, next) => {
 
   console.log(chalk.redBright.bold(error));
-  res.status(500).json(new ServerError('An internal error has occurred!'));
+
+  if ( ! res.headerSent ) res.status(500).json(new ServerError('An internal error has occurred!'));
 
 });
+
+if ( config.verboseLogs ) console.log(chalk.yellowBright.bold('Error handler installed'));
 
 // Misc
 app.disable('x-powered-by');
