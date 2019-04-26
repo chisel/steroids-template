@@ -24,7 +24,8 @@ import {
 const CONFIG_DEFAULT: BaseServerConfig = {
   port: 5000,
   verboseLogs: true,
-  predictive404: false
+  predictive404: false,
+  predictive404Priority: Infinity
 };
 
 // Override the config file
@@ -211,22 +212,7 @@ function createValidationMiddleware(route: RouteDefinition): RequestHandler {
 
 }
 
-// Scan the current directory
-const files = scanDirRec('.');
-
-// Install all modules
-for ( const file of files ) {
-
-  installModule(file);
-
-}
-
-// Inject services
-injectServices(services);
-injectServices(routers);
-
-// Install predictive 404 handler
-if ( config.predictive404 ) {
+function installPredictive404(): void {
 
   app.use('*', (req, res, next) => {
 
@@ -245,9 +231,21 @@ if ( config.predictive404 ) {
 
   });
 
-  if ( config.verboseLogs ) console.log(chalk.yellowBright.bold('Predictive 404 handler installed'));
+}
+
+// Scan the current directory
+const files = scanDirRec('.');
+
+// Install all modules
+for ( const file of files ) {
+
+  installModule(file);
 
 }
+
+// Inject services
+injectServices(services);
+injectServices(routers);
 
 // Install body parsers
 app.use(bodyParser.text());
@@ -265,11 +263,25 @@ app.use((error, req, res, next) => {
 // Sort routers based on priority
 routers = _.orderBy(routers, (router: BasicModule) => router.__metadata.priority, ['desc']);
 
+let predictive404Installed: boolean = false;
+
 // Install routes
 for ( const name in routers ) {
 
   const router: BasicModule = routers[name];
 
+  // Install predictive 404 handler
+  if ( config.predictive404 && config.predictive404Priority > router.__metadata.priority && ! predictive404Installed ) {
+
+    predictive404Installed = true;
+
+    installPredictive404();
+
+    if ( config.verboseLogs ) console.log(chalk.yellowBright.bold('Predictive 404 handler installed'));
+
+  }
+
+  // Check router
   if ( ! router.__metadata.routes || ! router.__metadata.routes.length ) {
 
     console.log(chalk.red.bold(`Router "${ chalk.cyan(router.__metadata.name) }" has no defined routes!`));
@@ -326,6 +338,17 @@ for ( const name in routers ) {
     );
 
   }
+
+}
+
+// Install predictive 404 (if not already)
+if ( config.predictive404 && ! predictive404Installed ) {
+
+  predictive404Installed = true;
+
+  installPredictive404();
+
+  if ( config.verboseLogs ) console.log(chalk.yellowBright.bold('Predictive 404 handler installed'));
 
 }
 

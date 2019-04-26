@@ -6,6 +6,7 @@ export interface BaseServerConfig {
   port?: number;
   verboseLogs?: boolean;
   predictive404?: boolean;
+  predictive404Priority: number;
 
 }
 
