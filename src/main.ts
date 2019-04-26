@@ -114,7 +114,8 @@ function injectServices(modules: any): void {
       if ( config.verboseLogs ) console.log(chalk.yellowBright.bold(`Services injected into ${ module.__metadata.type === ModuleType.Service ? 'service' : 'router' } "${ chalk.cyan(module.__metadata.name) }"`));
 
     }
-    else if ( module.onConfig && typeof module.onConfig === 'function' ) {
+
+    if ( module.onConfig && typeof module.onConfig === 'function' ) {
 
       module.onConfig(_.cloneDeep(config));
 
