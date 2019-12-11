@@ -88,7 +88,7 @@ export enum ValidationType {
 export interface ValidationRule {
 
   type: ValidationType;
-  validator: HeaderValidator|BodyValidator|ValidatorFunction|string[];
+  validator: HeaderValidator|BodyValidator|ValidatorFunction|AsyncValidatorFunction|string[];
 
 }
 
@@ -110,4 +110,12 @@ export interface FlatBodyValidator {
 
 }
 
-export type ValidatorFunction = (value: any) => boolean;
+export type ValidatorFunction = (value: any) => boolean|ValidationResult;
+export type AsyncValidatorFunction = (value: any) => Promise<boolean|ValidationResult>;
+
+export interface ValidationResult {
+
+  valid: boolean;
+  error?: string;
+
+}

@@ -98,15 +98,15 @@ export class AuthRouter implements OnInjection {
 }
 
 // Custom Basic auth validator
-function basicAuthValidator(req: Request): boolean {
+function basicAuthValidator(req: Request) {
 
   const basic: string = req.header('Authorization');
 
-  if ( ! basic || basic.substr(0, 5) !== 'Basic' ) return false;
+  if ( ! basic || basic.substr(0, 5) !== 'Basic' ) return { valid: false, error: 'Basic authorization header not set!' };
 
   let credentials = Buffer.from(basic.substr(6), 'base64').toString().split(':');
 
-  if ( ! credentials || credentials.length !== 2 ) return false;
+  if ( ! credentials || credentials.length !== 2 ) return { valid: false, error: 'Invalid authorization header!' };
 
   (<any>req).auth = {
     username: credentials[0],

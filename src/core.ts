@@ -5,6 +5,8 @@ import {
   ValidationType,
   ValidationRule,
   ValidatorFunction,
+  AsyncValidatorFunction,
+  ValidationResult,
   HeaderValidator,
   BodyValidator,
   FlatBodyValidator
@@ -67,17 +69,18 @@ export namespace type {
   */
   export function array(validator?: ValidatorFunction, arrayValidator?: ValidatorFunction): ValidatorFunction {
 
-    return (value: any): boolean => {
+    return (value: any): boolean|ValidationResult => {
 
       if ( ! value || typeof value !== 'object' || value.constructor !== Array ) return false;
-
-      let validation: boolean = true;
 
       if ( validator ) {
 
         for ( const item of value ) {
 
-          validation = validation && validator(item);
+          const result = validator(item);
+
+          if ( result === false ) return false;
+          if ( typeof result !== 'boolean' && ! result.valid ) return result;
 
         }
 
@@ -85,11 +88,11 @@ export namespace type {
 
       if ( arrayValidator ) {
 
-        validation = validation && arrayValidator(value);
+        return arrayValidator(value);
 
       }
 
-      return validation;
+      return true;
 
     };
 
@@ -152,13 +155,15 @@ export function equal(val: any): ValidatorFunction {
 */
 export function or(...validators: Array<ValidatorFunction>): ValidatorFunction {
 
-  return (value: any): boolean => {
+  return (value: any): boolean|ValidationResult => {
 
     let orCheck: boolean = false;
 
     for ( const validator of validators ) {
 
-      orCheck = orCheck || validator(value);
+      const result = validator(value);
+
+      orCheck = orCheck || (typeof result === 'boolean' ? result : result.valid);
 
     }
 
@@ -174,17 +179,18 @@ export function or(...validators: Array<ValidatorFunction>): ValidatorFunction {
 */
 export function and(...validators: Array<ValidatorFunction>): ValidatorFunction {
 
-  return (value: any): boolean => {
-
-    let andCheck: boolean = true;
+  return (value: any): boolean|ValidationResult => {
 
     for ( const validator of validators ) {
 
-      andCheck = andCheck && validator(value);
+      const result = validator(value);
+
+      if ( result === false ) return false;
+      if ( typeof result !== 'boolean' && ! result.valid ) return result;
 
     }
 
-    return andCheck;
+    return true;
 
   };
 
@@ -196,9 +202,11 @@ export function and(...validators: Array<ValidatorFunction>): ValidatorFunction 
 */
 export function not(validator: ValidatorFunction): ValidatorFunction {
 
-  return (value: any): boolean => {
+  return (value: any): boolean|ValidationResult => {
 
-    return ! validator(value);
+    const result = validator(value);
+
+    return typeof result === 'boolean' ? ! result : ! result.valid;
 
   };
 
@@ -210,7 +218,7 @@ export function not(validator: ValidatorFunction): ValidatorFunction {
 */
 export function opt(validator: ValidatorFunction): ValidatorFunction {
 
-  return (value: any): boolean => {
+  return (value: any): boolean|ValidationResult => {
 
     return value === undefined ? true : validator(value);
 
@@ -321,7 +329,7 @@ export namespace len {
 export function header(validator: HeaderValidator): ValidationRule { return { type: ValidationType.Header, validator: validator }; }
 export function query(validator: string[]): ValidationRule { return { type: ValidationType.Query, validator: validator }; }
 export function body(validator: BodyValidator): ValidationRule { return { type: ValidationType.Body, validator: validator }; }
-export function custom(validator: ValidatorFunction): ValidationRule { return { type: ValidationType.Custom, validator: validator } };
+export function custom(validator: AsyncValidatorFunction|ValidatorFunction): ValidationRule { return { type: ValidationType.Custom, validator: validator } };
 
 export class ServerError {
 

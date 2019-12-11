@@ -18,7 +18,9 @@ import {
   ValidationType,
   HeaderValidator,
   BodyValidator,
-  ValidatorFunction
+  ValidatorFunction,
+  AsyncValidatorFunction,
+  ValidationResult
 } from './core';
 
 const CONFIG_DEFAULT: BaseServerConfig = {
@@ -143,8 +145,10 @@ function bodyValidation(bodyValidator: BodyValidator, body: any, prefix: string 
     if ( typeof bodyValidator[key] === 'function' ) {
 
       const validator: ValidatorFunction = <ValidatorFunction>bodyValidator[key];
+      const validationResult = validator(body[key]);
 
-      if ( ! validator(body[key]) ) return new Error(`Invalid property '${keyPath}' on body!`);
+      if ( validationResult === false ) return new Error(`Invalid property '${keyPath}' on body!`);
+      if ( typeof validationResult !== 'boolean' && ! validationResult.valid ) return new Error(validationResult.error || `Invalid property '${keyPath}' on body!`);
 
     }
     else {
@@ -165,48 +169,68 @@ function createValidationMiddleware(route: RouteDefinition): RequestHandler {
 
   return (req: Request, res: Response, next: NextFunction) => {
 
-    for ( const rule of route.validate ) {
+    (async (): Promise<ValidationResult> => {
 
-      if ( rule.type === ValidationType.Header ) {
+      for ( const rule of route.validate ) {
 
-        for ( const key of _.keys(<HeaderValidator>rule.validator) ) {
+        if ( rule.type === ValidationType.Header ) {
 
-          const header = req.header(key);
+          for ( const key of _.keys(<HeaderValidator>rule.validator) ) {
 
-          if ( ! header || header.toLowerCase().trim() !== rule.validator[key].toLowerCase().trim() )
-            return rejectForValidation(res, `Invalid header '${ key }'!`);
+            const header = req.header(key);
+
+            if ( ! header || header.toLowerCase().trim() !== rule.validator[key].toLowerCase().trim() )
+              return { valid: false, error: `Invalid header '${ key }'!` };
+
+          }
+
+        }
+        else if ( rule.type === ValidationType.Query ) {
+
+          for ( const query of <string[]>rule.validator ) {
+
+            if ( ! req.query[query] ) return { valid: false, error: `Missing query parameter '${query}'!` };
+
+          }
+
+        }
+        else if ( rule.type === ValidationType.Body ) {
+
+          if ( ! req.body || typeof req.body !== 'object' || req.body.constructor !== Object )
+            return { valid: false, error: `Invalid body type!` };
+
+          const error = bodyValidation(<BodyValidator>rule.validator, req.body);
+
+          if ( error ) return { valid: false, error: error.message };
+
+        }
+        // Custom validation
+        else if ( rule.type === ValidationType.Custom ) {
+
+          const validationResult = await (<ValidatorFunction|AsyncValidatorFunction>rule.validator)(req);
+
+          if ( validationResult === false ) return { valid: false, error: 'Invalid request!' };
+          if ( typeof validationResult !== 'boolean' && ! validationResult.valid ) return { valid: false, error: validationResult.error || 'Invalid request!' };
 
         }
 
       }
-      else if ( rule.type === ValidationType.Query ) {
 
-        for ( const query of <string[]>rule.validator ) {
+      return { valid: true };
 
-          if ( ! req.query[query] ) return rejectForValidation(res, `Missing query parameter '${query}'!`);
+    })()
+    .then(result => {
 
-        }
+      if ( result.valid ) next();
+      else rejectForValidation(res, result.error);
 
-      }
-      else if ( rule.type === ValidationType.Body ) {
+    })
+    .catch(error => {
 
-        if ( ! req.body || typeof req.body !== 'object' || req.body.constructor !== Object )
-          return rejectForValidation(res, 'Invalid body type!');
+      if ( error.valid === false ) res.status(500).json(new ServerError(error.error ? error.error : 'Invalid request!', 'VALIDATION_FAILED'));
+      else res.status(500).json(new ServerError('Unknown error!\n' + error, 'VALIDATION_FAILED'));
 
-        const error = bodyValidation(<BodyValidator>rule.validator, req.body);
-
-        if ( error ) return rejectForValidation(res, error.message);
-
-      }
-      else if ( rule.type === ValidationType.Custom ) {
-
-        if ( ! (<ValidatorFunction>rule.validator)(req) ) return rejectForValidation(res, 'Invalid request!');
-
-      }
-
-    }
-
-    next();
+    });
 
   };
 

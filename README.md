@@ -414,9 +414,11 @@ function parity(odd: boolean): ValidatorFunction {
 }
 ```
 
+**NOTE:** [Read about custom error messages and the ValidationResult type.](#custom-error-messages)
+
 #### Custom Validation
 
-If you need to do something more complex or unique and still want to benefit from reusability and the auto-respond feature of the validators, you can create a function with this signature `(req: Request) => boolean` and pass it to the `custom` method:
+If you need to do something more complex or unique and still want to benefit from reusability and the auto-respond feature of the validators, you can create a function with this signature `(req: Request) => boolean|ValidationResult` and pass it to the `custom` method:
 
 ```ts
 import { Router, RouteMethod, custom } from './core';
@@ -448,6 +450,82 @@ function basicAuthValidator(req: Request): boolean {
   const authorization = req.header('Authorization');
 
   return authorization && authorization.substr(0, 5) === 'Basic';
+
+}
+```
+
+**NOTE:** [Read about custom error messages and the ValidationResult type.](#custom-error-messages)
+
+#### Custom Async Validation
+
+Custom validators, **excluding custom body validators**, can return a promise instead if asynchronous execution is needed.
+
+```ts
+import { Router, RouteMethod, custom } from './core';
+import { Request } from 'express';
+
+@Router({
+  name: 'auth',
+  priority: 100,
+  routes: [
+    { path: '*', handler: 'authHandler', validate: [
+      custom(userExistsPromise),
+      custom(userExistsAsync)
+    ]}
+  ]
+})
+export class Router1 {
+
+  authHandler(req, res, next) {
+
+    // req.user now exists from now on
+    next();
+
+  }
+
+}
+
+function userExistsPromise(req: Request): Promise<boolean> {
+
+  return new Promise((resolve, reject) => {
+
+    this.db.getUser(req.query.token)
+    .then(user => {
+
+      req.user = user;
+      resolve(true); // Must resolve with true
+
+    })
+    .catch(reject);
+
+  });
+
+}
+
+async function userExistsAsync(req: Request) {
+
+  req.user = await this.db.getUser(req.query.token);
+
+  return true;
+
+}
+```
+
+**NOTE:** [Read about custom error messages and the ValidationResult type.](#custom-error-messages)
+
+#### Custom Error Messages
+
+All custom validators and custom body validators can return a ValidationResult object instead to customize the error message.
+
+The returned object must contain `valid` (boolean) and `error` (string) properties. If `error` string is missing, the default message would be used instead.
+
+```ts
+function customValidator(req: Request) {
+
+  // Invalid query
+  if ( ! req.query.token ) return { valid: false, error: 'You must provide your auth token with all requests!' };
+
+  return true;
 
 }
 ```
