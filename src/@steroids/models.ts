@@ -1,5 +1,5 @@
-import { ServerConfig } from './config.model';
-export { ServerConfig } from './config.model';
+import { ServerConfig } from '../config.model';
+export { ServerConfig } from '../config.model';
 
 export interface BaseServerConfig {
 

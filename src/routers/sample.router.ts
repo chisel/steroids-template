@@ -11,9 +11,9 @@ import {
   len,
   opt,
   ServerError
-} from '../core';
+} from '@steroids/core';
 
-import { AuthenticatorService } from '../services/sample.service';
+import { AuthenticatorService } from '@steroids/service/sample';
 import { Request, Response, NextFunction } from 'express';
 
 @Router({

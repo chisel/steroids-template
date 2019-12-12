@@ -1,11 +1,12 @@
 // This script builds the app and starts the server
+import 'module-alias/register';
 import _ from 'lodash';
 import fs from 'fs-extra';
 import path from 'path';
 import express from 'express';
 import bodyParser from 'body-parser';
 import chalk from 'chalk';
-import serverConfig from './config.json';
+import serverConfig from '../config.json';
 
 import { RequestHandler, Request, Response, NextFunction } from 'express';
 
@@ -258,7 +259,7 @@ function installPredictive404(): void {
 }
 
 // Scan the current directory
-const files = scanDirRec('.');
+const files = scanDirRec('..');
 
 // Install all modules
 for ( const file of files ) {

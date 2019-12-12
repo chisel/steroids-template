@@ -1,4 +1,4 @@
-import { Service, OnConfig, ServerConfig } from '../core';
+import { Service, OnConfig, ServerConfig } from '@steroids/core';
 
 @Service({
   name: 'authenticator'

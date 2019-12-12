@@ -1,4 +1,4 @@
-import { BaseServerConfig } from './models';
+import { BaseServerConfig } from './@steroids/models';
 
 export interface ServerConfig extends BaseServerConfig {
 

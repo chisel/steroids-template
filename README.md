@@ -39,8 +39,8 @@ A service is basically a singleton class which is shared and accessible througho
 To build a service, simply create a file with the extension `.service.ts` anywhere inside the `src` directory and decorate it using the `@Service` decorator as shown below:
 
 ```ts
-// all imports are from src/core.ts
-import { Service } from './core';
+// all imports are from ''@steroids/core'
+import { Service } from '@steroids/core';
 
 @Service({
   name: 'foo'
@@ -57,8 +57,8 @@ export class FooService {
 This file will be automatically picked up by the server, so there's no need for any installation. You can then inject these services into your routers and also into other services, as shown below:
 
 ```ts
-import { Service, OnInjection } from './core';
-import { FooService } from './foo.service'; // For typings
+import { Service, OnInjection } from '@steroids/core';
+import { FooService } from '@steroids/service/foo'; // For typings
 
 @Service({
   name: 'bar'
@@ -81,8 +81,8 @@ export class BarService implements OnInjection {
 Similar to services, you can build a router by creating a file with the extension `.router.ts` stored anywhere inside the `src` directory. The `@Router` decorator is then used to decorate the class as a router while providing route definitions and other metadata.
 
 ```ts
-import { Router, OnInjection } from './core';
-import { BarService } from './bar.service';
+import { Router, OnInjection } from '@steroids/core';
+import { BarService } from '@steroids/service/bar';
 
 @Router({
   name: 'router1'
@@ -120,7 +120,7 @@ The `RouteDefinition` interface is as follows:
 The following is an example of a simple router which defines the route `GET /test` linked to the `Router1.routeHandler1` route handler:
 
 ```ts
-import { Router, RouteMethod } from './core';
+import { Router, RouteMethod } from '@steroids/core';
 import { Request, Response, NextFunction } from 'express';
 
 @Router({
@@ -154,7 +154,7 @@ When validation is used, the requests that won't pass the validation will automa
 #### Header Validation Example
 
 ```ts
-import { Router, RouteMethod, header } from './core';
+import { Router, RouteMethod, header } from '@steroids/core';
 
 @Router({
   name: 'router1',
@@ -179,7 +179,7 @@ export class Router1 {
 #### Query Parameter Validation Example
 
 ```ts
-import { Router, query } from './core';
+import { Router, query } from '@steroids/core';
 
 @Router({
   name: 'router1',
@@ -226,7 +226,7 @@ import {
   and,
   match,
   not
-} from './core';
+} from '@steroids/core';
 
 @Router({
   name: 'router1',
@@ -267,7 +267,7 @@ import {
   RouteMethod,
   body,
   type
-} from './core';
+} from '@steroids/core';
 
 enum Category {
   Category1,
@@ -308,7 +308,7 @@ import {
   type,
   sub,
   len
-} from './core';
+} from '@steroids/core';
 
 @Router({
   name: 'router1',
@@ -372,7 +372,7 @@ import {
   body,
   type,
   ValidatorFunction
-} from './core';
+} from '@steroids/core';
 
 @Router({
   name: 'router1',
@@ -421,7 +421,7 @@ function parity(odd: boolean): ValidatorFunction {
 If you need to do something more complex or unique and still want to benefit from reusability and the auto-respond feature of the validators, you can create a function with this signature `(req: Request) => boolean|ValidationResult` and pass it to the `custom` method:
 
 ```ts
-import { Router, RouteMethod, custom } from './core';
+import { Router, RouteMethod, custom } from '@steroids/core';
 import { Request } from 'express';
 
 @Router({
@@ -461,7 +461,7 @@ function basicAuthValidator(req: Request): boolean {
 Custom validators, **excluding custom body validators**, can return a promise instead if asynchronous execution is needed.
 
 ```ts
-import { Router, RouteMethod, custom } from './core';
+import { Router, RouteMethod, custom } from '@steroids/core';
 import { Request } from 'express';
 
 @Router({
@@ -550,7 +550,7 @@ You can expand the config object typing by editing the `ServerConfig` model insi
 If you need to get access to the config object inside your services or routers, implement `OnConfig` on your classes and define the following function:
 
 ```ts
-import { OnConfig, ServerConfig } from './core';
+import { OnConfig, ServerConfig } from '@steroids/core';
 
 class implements OnConfig {
 
@@ -563,7 +563,7 @@ class implements OnConfig {
 
 ## Server Assets
 
-Assets can be declared inside `package.json` using the `assets` array. Any files inside the array will be copied to the `dist` folder after the server build. Keep in mind that all paths should be relative to the `src` directory.
+Assets can be declared inside `package.json` using the `assets` array. Any files or directories declared inside the array will be copied to the `dist` folder after the server build. Keep in mind that all paths should be relative to the `src` directory.
 
 ### Assets Example
 
@@ -572,7 +572,8 @@ Assets can be declared inside `package.json` using the `assets` array. Any files
   "name": "ts-server",
   ...
   "assets": [
-    "firebase.certificate.json"
+    "firebase.certificate.json",
+    "public"
   ]
 }
 ```
@@ -582,7 +583,7 @@ Assets can be declared inside `package.json` using the `assets` array. Any files
 The `ServerError` class is available for responding to users with errors through the REST API and is used by the server internally when rejecting requests (e.g. validation errors, internal errors, 404 errors, etc.). Use the following example as how to interact with the `ServerError` class:
 
 ```ts
-import { ServerError } from './core';
+import { ServerError } from '@steroids/core';
 
 const error = new ServerError('Message', 'ERROR_CODE'); // Code defaults to 'UNKNOWN_ERROR' when not provided
 
@@ -594,5 +595,5 @@ const error = new ServerError('Message', 'ERROR_CODE'); // Code defaults to 'UNK
 # Notes
 
   - You can see some more detailed examples inside the sample files in `services` and `routers` directories.
-  - The directory structure of the server is totally up to you, since the server scans the `src` for `.service.js` and `.router.js` files to install at any depth.
+  - The directory structure of the server is totally up to you, since the server scans the `src` for `.service.js` and `.router.js` files to install at any depth. Though, path aliases are setup for the default directory structure. You can change aliases by editing `tsconfig.json` and `package.json`.
   - You can make your validators modular by storing the validator functions and the validator body definitions inside other files and reuse them everywhere.
