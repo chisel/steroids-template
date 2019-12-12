@@ -596,6 +596,5 @@ const error = new ServerError('Message', 'ERROR_CODE'); // Code defaults to 'UNK
 
 # Notes
 
-  - You can see some more detailed examples inside the sample files in `services` and `routers` directories.
   - The directory structure of the server is totally up to you, since the server scans the `src` for `.service.js` and `.router.js` files to install at any depth. Though, path aliases are setup for the default directory structure. You can change aliases by editing `tsconfig.json` and `package.json` if desired.
   - You can make your validators modular by storing the validator functions and the validator body definitions inside other files and reuse them everywhere.
