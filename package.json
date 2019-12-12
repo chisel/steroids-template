@@ -2,7 +2,7 @@
   "name": "steroids-template",
   "version": "1.4.0",
   "description": "Framework for building Node.js servers with Express on steroids!",
-  "main": "main.ts",
+  "main": "src/main.ts",
   "scripts": {
     "build": "node pre-processing.js && ./node_modules/typescript/bin/tsc --build && node post-processing.js",
     "launch": "node dist/@steroids/main.js",
@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/ramtinsoltani/ts-server.git"
+    "url": "git+ssh://git@github.com/chisel/steroids-template.git"
   },
   "keywords": [
     "typescript",
@@ -28,9 +28,9 @@
   "author": "Ramtin Soltani <ramtin@chiselpowered.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/ramtinsoltani/ts-server/issues"
+    "url": "https://github.com/chisel/steroids-template/issues"
   },
-  "homepage": "https://github.com/ramtinsoltani/ts-server#readme",
+  "homepage": "https://github.com/chisel/steroids-template#readme",
   "dependencies": {
     "body-parser": "^1.19.0",
     "chalk": "^3.0.0",
