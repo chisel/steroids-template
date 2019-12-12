@@ -408,6 +408,6 @@ app.disable('x-powered-by');
 app.listen(config.port, (error: Error) => {
 
   if ( error ) console.log(chalk.red.bold(`Could not start the server due to an error:\n${error}`));
-  else console.log(chalk.greenBright.bold(`Server started on port ${chalk.cyan('5000')}`));
+  else console.log(chalk.greenBright.bold(`Server started on port ${chalk.cyan(config.port)}`));
 
 });

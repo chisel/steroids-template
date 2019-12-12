@@ -1,6 +1,6 @@
 {
   "name": "steroids-template",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Framework for building Node.js servers with Express on steroids!",
   "main": "src/main.ts",
   "scripts": {
