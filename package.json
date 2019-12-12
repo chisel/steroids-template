@@ -1,7 +1,7 @@
 {
-  "name": "ts-server",
+  "name": "steroids-template",
   "version": "1.4.0",
-  "description": "TypeScript server infrastructure/template.",
+  "description": "Framework for building Node.js servers with Express on steroids!",
   "main": "main.ts",
   "scripts": {
     "build": "node pre-processing.js && ./node_modules/typescript/bin/tsc --build && node post-processing.js",
@@ -25,7 +25,7 @@
     "fast",
     "development"
   ],
-  "author": "Ramtin Soltani <ramtinsoltani93@gmail.com>",
+  "author": "Ramtin Soltani <ramtin@chiselpowered.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/ramtinsoltani/ts-server/issues"

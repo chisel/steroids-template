@@ -1,19 +1,21 @@
-# TypeScript Server Infrastructure/Template
+# Express on Steroids!
 
-This repository contains a Node.js server infrastructure/template ready for use with the following properties:
+Steroids helps building backend solutions with Node.js, Express, and TypeScript by introducing new components that are easy and fast to develop.
+
+Here's a quick list of features Steroids provides:
 
   - TypeScript enabled
   - Powered by Express
   - Automatic code minification
   - Logic is encapsulated into "Services" and router middlewares are grouped as "Routers"
-  - Routes are easily defined inside the Router decorator
-  - Super easy input validation on routers (body input, headers, query parameters, etc.)
+  - Routes are easily defined using the Router decorator
+  - Built-in input validation mechanism with routers (request body, headers, query parameters, etc.)
   - Ability to extend the validation logic with custom validators
   - Dynamic route and service installation
   - Dynamic service injection without circular dependency issues
   - TypeDoc ready
 
-The purpose of this repository is mainly reusability and a kick start to developing backend solutions with TypeScript.
+You can use this repository/template directly or through the [Steroids CLI](https://github.com/chisel/steroids) for even faster development (recommended). [Steroids CLI](https://github.com/chisel/steroids) allows creating new backend projects using Steroids template (with custom configuration) and also to add components (such as routers, services, etc.) with template code.
 
 # Installation
 
@@ -30,7 +32,7 @@ The purpose of this repository is mainly reusability and a kick start to develop
 
 # Development
 
-All the components of this server infrastructure are divided into two categories: Services and Routers.
+Steroids introduces two new components to work with: Services and Routers.
 
 ## Services
 
@@ -414,7 +416,7 @@ function parity(odd: boolean): ValidatorFunction {
 }
 ```
 
-**NOTE:** [Read about custom error messages and the ValidationResult type.](#custom-error-messages)
+> **NOTE:** [Read about custom error messages and the ValidationResult type.](#custom-error-messages)
 
 #### Custom Validation
 
@@ -454,7 +456,7 @@ function basicAuthValidator(req: Request): boolean {
 }
 ```
 
-**NOTE:** [Read about custom error messages and the ValidationResult type.](#custom-error-messages)
+> **NOTE:** [Read about custom error messages and the ValidationResult type.](#custom-error-messages)
 
 #### Custom Async Validation
 
@@ -511,7 +513,7 @@ async function userExistsAsync(req: Request) {
 }
 ```
 
-**NOTE:** [Read about custom error messages and the ValidationResult type.](#custom-error-messages)
+> **NOTE:** [Read about custom error messages and the ValidationResult type.](#custom-error-messages)
 
 #### Custom Error Messages
 
@@ -569,7 +571,7 @@ Assets can be declared inside `package.json` using the `assets` array. Any files
 
 ```json
 {
-  "name": "ts-server",
+  "name": "steroids-template",
   ...
   "assets": [
     "firebase.certificate.json",
@@ -590,10 +592,10 @@ const error = new ServerError('Message', 'ERROR_CODE'); // Code defaults to 'UNK
 // res.json(error) --> { error: true, message: 'Message', code: 'ERROR_CODE' }
 ```
 
-> Note that this class is not an actual extension of the Error class and should not be used when stack trace is needed.
+> **NOTE:** This class is not an actual extension of the Error class and should not be used when stack trace is needed.
 
 # Notes
 
   - You can see some more detailed examples inside the sample files in `services` and `routers` directories.
-  - The directory structure of the server is totally up to you, since the server scans the `src` for `.service.js` and `.router.js` files to install at any depth. Though, path aliases are setup for the default directory structure. You can change aliases by editing `tsconfig.json` and `package.json`.
+  - The directory structure of the server is totally up to you, since the server scans the `src` for `.service.js` and `.router.js` files to install at any depth. Though, path aliases are setup for the default directory structure. You can change aliases by editing `tsconfig.json` and `package.json` if desired.
   - You can make your validators modular by storing the validator functions and the validator body definitions inside other files and reuse them everywhere.
