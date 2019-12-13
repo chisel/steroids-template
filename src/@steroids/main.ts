@@ -1,5 +1,4 @@
 // This script builds the app and starts the server
-import 'module-alias/register';
 import _ from 'lodash';
 import fs from 'fs-extra';
 import path from 'path';
@@ -7,6 +6,13 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import chalk from 'chalk';
 import serverConfig from '../config.json';
+import * as tsConfigPaths from 'tsconfig-paths';
+import paths from '../paths.json';
+
+tsConfigPaths.register({
+  baseUrl: './dist',
+  paths: paths
+});
 
 import { RequestHandler, Request, Response, NextFunction } from 'express';
 
