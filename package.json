@@ -52,7 +52,7 @@
   "_moduleAliases": {
     "@steroids/core": "./dist/@steroids/core",
     "@steroids/models": "./dist/@steroids/models",
-    "@steroids/router": "./dist/router",
-    "@steroids/service": "./dist/service"
+    "@steroids/router": "./dist/routers",
+    "@steroids/service": "./dist/services"
   }
 }
