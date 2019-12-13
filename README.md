@@ -13,6 +13,8 @@ Here's a quick list of features Steroids provides:
   - Ability to extend the validation logic with custom validators
   - Dynamic route and service installation
   - Dynamic service injection without circular dependency issues
+  - Path alias support for easier imports
+  - Unit testing with Mocha and Chai
   - TypeDoc ready
 
 You can use this repository/template directly or through the [Steroids CLI](https://github.com/chisel/steroids) for even faster development (recommended). [Steroids CLI](https://github.com/chisel/steroids) allows creating new backend projects using Steroids template (with custom configuration) and also to add components (such as routers, services, etc.) with template code.

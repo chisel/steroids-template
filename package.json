@@ -50,9 +50,9 @@
     "uglify-es": "^3.3.9"
   },
   "_moduleAliases": {
-    "@steroids/core": "dist/@steroids/core.js",
-    "@steroids/models": "dist/@steroids/models.js",
-    "@steroids/router": "dist/router",
-    "@steroids/service": "dist/service"
+    "@steroids/core": "./dist/@steroids/core",
+    "@steroids/models": "./dist/@steroids/models",
+    "@steroids/router": "./dist/router",
+    "@steroids/service": "./dist/service"
   }
 }
