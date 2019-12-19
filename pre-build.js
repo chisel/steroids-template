@@ -2,13 +2,17 @@ const path = require('path');
 const fs = require('fs-extra');
 
 // Delete dist (but keep dist/.logs)
-const files = fs.readdirSync(path.join(__dirname, 'dist'));
+if ( fs.existsSync(path.resolve(__dirname, 'dist')) ) {
 
-for ( const file of files ) {
+  const files = fs.readdirSync(path.join(__dirname, 'dist'));
 
-  if ( file === '.logs' ) continue;
+  for ( const file of files ) {
 
-  fs.removeSync(path.join(__dirname, 'dist', file));
+    if ( file === '.logs' ) continue;
+
+    fs.removeSync(path.join(__dirname, 'dist', file));
+
+  }
 
 }
 
