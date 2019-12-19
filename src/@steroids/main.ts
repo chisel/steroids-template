@@ -4,16 +4,11 @@ import fs from 'fs-extra';
 import path from 'path';
 import express from 'express';
 import bodyParser from 'body-parser';
-import chalk from 'chalk';
+import { DateTime } from 'luxon';
 import serverConfig from '../config.json';
 import * as tsConfigPaths from 'tsconfig-paths';
 import paths from '../paths.json';
-
-tsConfigPaths.register({
-  baseUrl: './dist',
-  paths: paths
-});
-
+import { ServerLogger } from './logger';
 import { RequestHandler, Request, Response, NextFunction } from 'express';
 
 import {
@@ -30,15 +25,37 @@ import {
   ValidationResult
 } from './core';
 
+// Register path alias resolver
+tsConfigPaths.register({
+  // If CWD is the dist folder, set the baseUrl to './', otherwise set it to './dist'
+  baseUrl: './' + (fs.existsSync(path.resolve(process.cwd(), '@steroids')) ? '' : 'dist'),
+  paths: paths
+});
+
 const CONFIG_DEFAULT: BaseServerConfig = {
   port: 5000,
-  verboseLogs: true,
   predictive404: false,
-  predictive404Priority: Infinity
+  predictive404Priority: Infinity,
+  timezone: DateTime.local().zone.name,
+  colorfulLogs: true,
+  writeLogsToFile: true,
+  logFileLevels: 'all',
+  consoleLogLevels: ['info', 'notice', 'warn', 'error'],
+  logFileMaxAge: 7,
+  archiveLogs: true
 };
 
 // Override the config file
-let config = _.merge(CONFIG_DEFAULT, serverConfig);
+let config = _.assign(CONFIG_DEFAULT, serverConfig);
+
+// Provide server logger globally
+declare global {
+
+  let log: ServerLogger;
+
+}
+
+(<any>global).log = new ServerLogger(config);
 
 const app = express();
 const services: any = {};
@@ -63,13 +80,13 @@ function installModule(filename: string): void {
       if ( initializedModule.__metadata.type === ModuleType.Service ) {
 
         services[initializedModule.__metadata.name] = initializedModule;
-        if ( config.verboseLogs ) console.log(chalk.yellowBright.bold(`Service "${chalk.cyan(initializedModule.__metadata.name)}" installed`));
+        log.debug(`Service "${initializedModule.__metadata.name}" installed`);
 
       }
       else if ( initializedModule.__metadata.type === ModuleType.Router ) {
 
         routers[initializedModule.__metadata.name] = initializedModule;
-        if ( config.verboseLogs ) console.log(chalk.yellowBright.bold(`Router "${chalk.cyan(initializedModule.__metadata.name)}" installed`));
+        log.debug(`Router "${initializedModule.__metadata.name}" installed`);
 
       }
 
@@ -121,7 +138,7 @@ function injectServices(modules: any): void {
 
       module.onInjection(services);
 
-      if ( config.verboseLogs ) console.log(chalk.yellowBright.bold(`Services injected into ${ module.__metadata.type === ModuleType.Service ? 'service' : 'router' } "${ chalk.cyan(module.__metadata.name) }"`));
+      log.debug(`Services injected into ${module.__metadata.type === ModuleType.Service ? 'service' : 'router'} "${module.__metadata.name}"`);
 
     }
 
@@ -129,7 +146,7 @@ function injectServices(modules: any): void {
 
       module.onConfig(_.cloneDeep(config));
 
-      if ( config.verboseLogs ) console.log(chalk.yellowBright.bold(`Config injected into ${ module.__metadata.type === ModuleType.Service ? 'service' : 'router' } "${ chalk.cyan(module.__metadata.name) }"`));
+      log.debug(`Config injected into ${module.__metadata.type === ModuleType.Service ? 'service' : 'router'} "${module.__metadata.name}"`);
 
     }
 
@@ -258,7 +275,7 @@ function installPredictive404(): void {
     });
 
     if ( matches ) next();
-    else res.status(404).json(new ServerError(`Route ${req.originalUrl} not found!`, 'ROUTE_NOT_FOUND'));
+    else res.status(404).json(new ServerError(`Route ${req.path} not found!`, 'ROUTE_NOT_FOUND'));
 
   });
 
@@ -308,14 +325,14 @@ for ( const name in routers ) {
 
     installPredictive404();
 
-    if ( config.verboseLogs ) console.log(chalk.yellowBright.bold('Predictive 404 handler installed'));
+    log.debug('Predictive 404 handler installed');
 
   }
 
   // Check router
   if ( ! router.__metadata.routes || ! router.__metadata.routes.length ) {
 
-    console.log(chalk.red.bold(`Router "${ chalk.cyan(router.__metadata.name) }" has no defined routes!`));
+    log.warn(`Router "${router.__metadata.name}" has no defined routes!`);
     continue;
 
   }
@@ -325,14 +342,14 @@ for ( const name in routers ) {
     // Validate route definition
     if ( ! route || ! route.path || ! route.handler ) {
 
-      console.log(chalk.red.bold(`Router "${ chalk.cyan(router.__metadata.name) }" has incorrectly defined a route!`));
+      log.warn(`Router "${router.__metadata.name}" has incorrectly defined a route!`);
       continue;
 
     }
 
     if ( ! Object.getOwnPropertyNames(Object.getPrototypeOf(router)).includes(route.handler) || typeof router[route.handler] !== 'function' ) {
 
-      console.log(chalk.red.bold(`Route handler "${ chalk.cyan(route.handler) }" not found in router "${ chalk.cyan(router.__metadata.name) }"!`));
+      log.error(`Route handler "${route.handler}" not found in router "${router.__metadata.name}"!`);
       continue;
 
     }
@@ -340,16 +357,14 @@ for ( const name in routers ) {
     // Create route handlers
     const handlers: RequestHandler[] = [];
 
-    // Create route logger if necessary
-    if ( config.verboseLogs ) {
+    // Create route logger
+    handlers.push((req, res, next) => {
 
-      handlers.push((req, res, next) => {
+      log.debug(req.method.toUpperCase(), req.path);
 
-        console.log(`[${Date.now()}]`, chalk.yellowBright(req.method.toUpperCase()), chalk.cyan(req.originalUrl)); next();
+      next();
 
-      });
-
-    }
+    });
     // Create route validator if necessary
     if ( route.validate ) handlers.push(createValidationMiddleware(route));
     // Add the route handler provided by user
@@ -358,15 +373,7 @@ for ( const name in routers ) {
     // Install the route
     app[route.method || 'use'](route.path, ...handlers);
 
-    if ( config.verboseLogs ) console.log(
-      chalk.blueBright.bold(
-        `Route "${
-          chalk.yellowBright((route.method ? route.method.toUpperCase() : 'GLOBAL') + ' ' + route.path)
-        }" from router "${
-          chalk.yellowBright(router.__metadata.name)
-        }" was installed`
-      )
-    );
+    log.debug(`Route "${(route.method ? route.method.toUpperCase() : 'GLOBAL') + ' ' + route.path}" from router "${router.__metadata.name}" was installed`);
 
   }
 
@@ -379,7 +386,7 @@ if ( config.predictive404 && ! predictive404Installed ) {
 
   installPredictive404();
 
-  if ( config.verboseLogs ) console.log(chalk.yellowBright.bold('Predictive 404 handler installed'));
+  log.debug('Predictive 404 handler installed');
 
 }
 
@@ -388,24 +395,24 @@ if ( ! config.predictive404 ) {
 
   app.use('*', (req, res) => {
 
-  res.status(404).json(new ServerError(`Route ${req.originalUrl} not found!`, 'ROUTE_NOT_FOUND'));
+  res.status(404).json(new ServerError(`Route ${req.path} not found!`, 'ROUTE_NOT_FOUND'));
 
 });
 
-  if ( config.verboseLogs ) console.log(chalk.yellowBright.bold('404 handler installed'));
+  log.debug('404 handler installed');
 
 }
 
 // Install error handler
 app.use((error, req, res, next) => {
 
-  console.log(chalk.redBright.bold(error));
+  log.error(error);
 
   if ( ! res.headerSent ) res.status(500).json(new ServerError('An internal error has occurred!'));
 
 });
 
-if ( config.verboseLogs ) console.log(chalk.yellowBright.bold('Error handler installed'));
+log.debug('Error handler installed');
 
 // Misc
 app.disable('x-powered-by');
@@ -413,7 +420,7 @@ app.disable('x-powered-by');
 // Start the server
 app.listen(config.port, (error: Error) => {
 
-  if ( error ) console.log(chalk.red.bold(`Could not start the server due to an error:\n${error}`));
-  else console.log(chalk.greenBright.bold(`Server started on port ${chalk.cyan(config.port)}`));
+  if ( error ) log.error('Could not start the server due to an error:', error);
+  else log.notice(`Server started on port ${config.port}`);
 
 });

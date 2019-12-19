@@ -1,8 +1,16 @@
 const path = require('path');
 const fs = require('fs-extra');
 
-// Delete dist
-fs.remove(path.join(__dirname, 'dist'));
+// Delete dist (but keep dist/.logs)
+const files = fs.readdirSync(path.join(__dirname, 'dist'));
+
+for ( const file of files ) {
+
+  if ( file === '.logs' ) continue;
+
+  fs.removeSync(path.join(__dirname, 'dist', file));
+
+}
 
 // Add tsconfig paths to src/paths.json
 const tsconfigPaths = require('./tsconfig.json').compilerOptions.paths || {};

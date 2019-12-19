@@ -10,8 +10,5 @@
   ],
   "@steroids/service/*": [
     "services/*.service"
-  ],
-  "@steroids/validator/*": [
-    "validators/*.validator"
   ]
 }

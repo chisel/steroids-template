@@ -3,10 +3,16 @@ export { ServerConfig } from '../config.model';
 
 export interface BaseServerConfig {
 
-  port?: number;
-  verboseLogs?: boolean;
-  predictive404?: boolean;
+  port: number;
+  predictive404: boolean;
   predictive404Priority: number;
+  timezone: string;
+  colorfulLogs: boolean;
+  consoleLogLevels: ('debug'|'info'|'notice'|'warn'|'error')[]|'all';
+  writeLogsToFile: boolean;
+  logFileLevels: ('debug'|'info'|'notice'|'warn'|'error')[]|'all';
+  logFileMaxAge: number;
+  archiveLogs: boolean;
 
 }
 

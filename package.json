@@ -1,12 +1,12 @@
 {
   "name": "steroids-template",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Framework for building Node.js servers with Express on steroids!",
   "main": "src/main.ts",
   "scripts": {
-    "build": "node pre-processing.js && ./node_modules/typescript/bin/tsc --build && node post-processing.js",
+    "build": "node pre-build.js && ./node_modules/typescript/bin/tsc --build && node post-build.js",
     "launch": "node dist/@steroids/main.js",
-    "start": "node pre-processing.js && ./node_modules/typescript/bin/tsc --build && node post-processing.js && node dist/@steroids/main.js",
+    "start": "node pre-build.js && ./node_modules/typescript/bin/tsc --build && node post-build.js && node dist/@steroids/main.js",
     "docs": "./node_modules/typedoc/bin/typedoc --out docs src"
   },
   "repository": {
@@ -37,6 +37,8 @@
     "express": "^4.17.1",
     "fs-extra": "^8.1.0",
     "lodash": "^4.17.15",
+    "luxon": "^1.21.3",
+    "strip-ansi": "^6.0.0",
     "tsconfig-paths": "^3.9.0"
   },
   "devDependencies": {
@@ -44,6 +46,7 @@
     "@types/express": "^4.17.2",
     "@types/fs-extra": "^8.0.1",
     "@types/lodash": "^4.14.149",
+    "@types/luxon": "^1.21.0",
     "@types/node": "^12.12.16",
     "typedoc": "^0.15.4",
     "typescript": "^3.7.3",
