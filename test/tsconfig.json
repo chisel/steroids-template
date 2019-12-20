@@ -14,22 +14,10 @@
     "sourceRoot": "src",
     "outDir": "dist",
     "typeRoots": [
-      "node_modules/@types"
+      "../node_modules/@types"
     ],
     "lib": [
       "es2018"
-    ],
-    "paths": {
-      "@steroids/core": ["./src/@steroids/core"],
-      "@steroids/models": ["./src/@steroids/models"],
-      "@steroids/router/*": ["./src/routers/*.router"],
-      "@steroids/service/*": ["./src/services/*.service"]
-    }
-  },
-  "exclude": [
-    "dist",
-    "docs",
-    "node_modules",
-    "test"
-  ]
+    ]
+  }
 }

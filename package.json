@@ -1,13 +1,14 @@
 {
   "name": "steroids-template",
-  "version": "1.6.1",
+  "version": "1.7.0",
   "description": "Framework for building Node.js servers with Express on steroids!",
   "main": "src/main.ts",
   "scripts": {
     "build": "node pre-build.js && ./node_modules/typescript/bin/tsc --build && node post-build.js",
     "launch": "node dist/@steroids/main.js",
     "start": "node pre-build.js && ./node_modules/typescript/bin/tsc --build && node post-build.js && node dist/@steroids/main.js",
-    "docs": "./node_modules/typedoc/bin/typedoc --out docs src"
+    "docs": "./node_modules/typedoc/bin/typedoc --out docs src",
+    "test": "node pre-test.js && ./node_modules/typescript/bin/tsc -p test/tsconfig.json && ./node_modules/mocha/bin/mocha ./test/dist/main.spec.js"
   },
   "repository": {
     "type": "git",
@@ -33,20 +34,24 @@
   "homepage": "https://github.com/chisel/steroids-template#readme",
   "dependencies": {
     "body-parser": "^1.19.0",
+    "chai": "^4.2.0",
     "chalk": "^3.0.0",
     "express": "^4.17.1",
     "fs-extra": "^8.1.0",
     "lodash": "^4.17.15",
     "luxon": "^1.21.3",
+    "mocha": "^6.2.2",
     "strip-ansi": "^6.0.0",
     "tsconfig-paths": "^3.9.0"
   },
   "devDependencies": {
     "@types/body-parser": "^1.17.1",
+    "@types/chai": "^4.2.7",
     "@types/express": "^4.17.2",
     "@types/fs-extra": "^8.0.1",
     "@types/lodash": "^4.14.149",
     "@types/luxon": "^1.21.0",
+    "@types/mocha": "^5.2.7",
     "@types/node": "^12.12.16",
     "typedoc": "^0.15.4",
     "typescript": "^3.7.3",
