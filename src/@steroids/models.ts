@@ -13,6 +13,7 @@ export interface BaseServerConfig {
   logFileLevels: ('debug'|'info'|'notice'|'warn'|'error')[]|'all';
   logFileMaxAge: number;
   archiveLogs: boolean;
+  fileUploadLimit: string;
 
 }
 
@@ -72,13 +73,19 @@ export interface ModuleMetadata {
 
 export interface OnInjection {
 
-  onInjection: (services: any) => void;
+  onInjection: (services: any) => void|Promise<void>;
 
 }
 
 export interface OnConfig {
 
-  onConfig: (config: ServerConfig) => void;
+  onConfig: (config: ServerConfig) => void|Promise<void>;
+
+}
+
+export interface OnInit {
+
+  onInit: () => void|Promise<void>;
 
 }
 

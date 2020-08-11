@@ -20,6 +20,46 @@ Here's a quick list of features Steroids provides:
 
 You can use this repository/template directly or through the [Steroids CLI](https://github.com/chisel/steroids) for even faster development (recommended). [Steroids CLI](https://github.com/chisel/steroids) allows creating new backend projects using Steroids template (with custom configuration) and also to add components (such as routers, services, etc.) with template code.
 
+# Index
+
+- [Installation](#installation)
+- [NPM Scripts](#npm-scripts)
+- [Launching the Server](#launching-the-server)
+- [Development](#development)
+  - [Services](#services)
+  - [Routers](#routers)
+    - [Defining Routes](#defining-routes)
+    - [Input Validation](#input-validation)
+      - [Header Validation Example](#header-validation-example)
+      - [Query Parameter Validation Example](#query-parameter-validation-example)
+      - [Body Validation Example](#body-validation-example)
+      - [Body Validation: Enums](#body-validation-enums)
+      - [Body Validation: Arrays Of Objects](#body-validation-array-of-objects)
+      - [Body Validation API](#body-validation-api)
+      - [Custom Body Validation](#custom-body-validation)
+      - [Custom Validation](#custom-validation)
+      - [Custom Async Validation](#custom-async-validation)
+      - [Custom Error Messages](#custom-error-messages)
+    - [Serving Static Files](#serving-static-files)
+  - [Module Hooks](#module-hooks)
+    - [Injection Hook](#injection-hook)
+    - [Config Hook](#config-hook)
+    - [Init Hook](#init-hook)
+  - [Events Manager](#events-manager)
+    - [Server Events](#server-events)
+  - [Server Logger](#server-logger)
+    - [Saving Logs on Disk](#saving-logs-on-disk)
+      - [Logs Max Age Control](#logs-max-age-control)
+    - [Log Levels](#log-levels)
+  - [Server Config](#server-config)
+    - [Config Injection](#config-injection)
+    - [Config Expansion](#config-expansion)
+  - [Server Assets](#server-assets)
+    - [Assets Example](#assets-example)
+  - [Server Error](#server-error)
+  - [Testing](#testing)
+- [Notes](#notes)
+
 # Installation
 
   1. Clone this repo
@@ -548,6 +588,163 @@ function customValidator(req: Request) {
 }
 ```
 
+### Serving Static Files
+
+Static files can be served in routers using the following trick:
+
+```ts
+import { Router } from '@steroids/core';
+import express from 'express';
+import path from 'path';
+
+@Router({
+  name: 'public',
+  routes: [
+    { path: '/public', handler: 'serveStatic' }
+  ]
+})
+export class StaticRouter {
+
+  public get serveStatic() {
+
+    // Serve all files from '../public'
+    return express.static(path.resolve(__dirname, '..', 'public'));
+
+  }
+
+}
+```
+
+## Module Hooks
+
+All modules (routers and services) can run code at different stages of the server launch using the following hooks.
+
+All hooks can be run asynchronously either by returning a Promise or using the async/await syntax. Please keep in mind that if hooks are used asynchronously, they must be resolved before next hooks can be run on other modules.
+
+### Injection Hook
+
+The first hook that runs on modules is `onInjection` which provides an object containing all defined services. This hook can be used to store a reference of certain services needed for use inside a module (aka injection):
+
+```ts
+import { Service, OnInjection } from '@steroids/core';
+// For typings
+import { MyOtherService } from '@steroids/service/my-other';
+
+@Service({
+  name: 'my'
+})
+export class MyService implements OnInjection {
+
+  private myOtherService: MyOtherService;
+
+  onInjection(services: any) {
+
+    this.myOtherService = services['my-other'];
+
+  }
+
+}
+```
+
+### Config Hook
+
+The second hook that runs on modules is `onConfig` which provides the server configuration file:
+
+```ts
+import { Service, OnConfig, ServerConfig } from '@steroids/core';
+
+@Service({
+  name: 'my'
+})
+export class MyService implements OnConfig {
+
+  onConfig(config: ServerConfig) {
+    // Inject or use...
+  }
+
+}
+```
+
+### Init Hook
+
+The final hook that runs is `onInit` which gives all modules a chance to initialize:
+
+```ts
+import { Service, OnInit } from '@steroids/core';
+
+@Service({
+  name: 'my'
+})
+export class MyService implements OnInit {
+
+  onInit() {
+    // Initialize service
+  }
+
+}
+```
+
+> **NOTE:** If initialization of a certain module depends on another when using async hooks, use the appropriate (server event)[#server-events] and resolve the promise immediately to avoid hanging the server launch (e.g. `my-service:init:after`). A "ready" signal system can also be implemented for all modules by using the global [events manager](#events-manager).
+
+## Events Manager
+
+The built-in events manager is globally available as `events` with the following methods:
+
+```ts
+// Runs every time event is emitted
+events.on('my-event', (...args) => console.log(`Event "my-event" emitted with arguments: ${args.join(', ')}`));
+// Runs only once the next time event in emitted
+events.once('my-event', (...args) => console.log(`Event "my-event" emitted with arguments: ${args.join(', ')}`));
+// Removes an event listener
+events.off('my-event', listener);
+// Emits an event
+events.emit('my-event', 1, 2, 3);
+// Emits an event once, all listeners in the future will be called and
+// receive the same arguments provided here immediately after being added
+// and this event cannot be emitted anymore in the future
+events.emitOnce('my-event', 1, 2, 3);
+// Returns a list of event names
+events.eventNames();
+// Alias for events.on
+events.addListener('my-event', (...args) => console.log(`Event "my-event" emitted with arguments: ${args.join(', ')}`));
+// Alias for events.once
+events.addOnceListener('my-event', (...args) => console.log(`Event "my-event" emitted with arguments: ${args.join(', ')}`));
+// Alias for events.off
+events.removeListener('my-event', listener);
+// Removes all listeners for an event
+events.removeAllListeners('my-event');
+// Returns listeners count for an event
+events.listenersCount('my-event');
+// Prepends an event listener
+events.prependListener('my-event', (...args) => console.log(`Event "my-event" emitted with arguments: ${args.join(', ')}`));
+// Prepends a once listener
+events.prependOnceListener('my-event', (...args) => console.log(`Event "my-event" emitted with arguments: ${args.join(', ')}`));
+// Returns a list of listener functions (this array cannot be used to modify the listeners)
+events.getListeners('my-event');
+// Returns the raw listeners array (this array cannot be used to modify the listeners)
+events.getRawListeners('my-event');
+```
+
+### Server Events
+
+The following events will be emitted by Steroids at various stages:
+
+| Event | Name | Description |
+|:------|:-----|:------------|
+| Before service injection | `NAME-service:inject:before` | Emits before services get injected into a service (`NAME` will be the service name). |
+| After service injection | `NAME-service:inject:after` | Emits after services got injected into a service (`NAME` will be the service name). |
+| Before router injection | `NAME-router:inject:before` | Emits before services get injected into a router (`NAME` will be the router name). |
+| After router injection | `NAME-router:inject:after` | Emits after services got injected into a router (`NAME` will be the router name). |
+| Before service config injection | `NAME-service:config:before` | Emits before config gets injected into a service (`NAME` will be the service name). |
+| After service config injection | `NAME-service:config:after` | Emits after config got injected into a service (`NAME` will be the service name). |
+| Before router config injection | `NAME-router:config:before` | Emits before config gets injected into a router (`NAME` will be the router name). |
+| After router config injection | `NAME-router:config:after` | Emits after config got injected into a router (`NAME` will be the router name). |
+| Before service initialization | `NAME-service:init:before` | Emits before a service gets initialized (`NAME` will be the service name). |
+| After service initialization | `NAME-service:init:after` | Emits after a service got initialized (`NAME` will be the service name). |
+| Before router initialization | `NAME-router:init:before` | Emits before a service gets initialized (`NAME` will be the router name). |
+| After router initialization | `NAME-router:init:after` | Emits after a service got initialized (`NAME` will be the router name). |
+| Server launched | `launch` | Emits after the server gets launched successfully. |
+
 ## Server Logger
 
 The built-in logger is available globally as `log` with the following methods:
@@ -604,22 +801,11 @@ The server has a configuration file located at `src/config.json` with the follow
 | archiveLogs | boolean | Will archive logs written on disk that are older than their max age (defaults to `true`). |
 | predictive404 | boolean | If true, installs a 404 handler at the top of the stack instead (this can be configured through `predictive404Priority`), which predicts if path will match with any middleware in the stack and rejects the request with a 404 error if not. This is useful as requests that will eventually result in a 404 error won't go through the stack in the first place. Please note that the prediction ignores all `*` and `/` routes (defaults to `false`). |
 | predictive404Priority | number | The priority of the predictive 404 middleware (defaults to `Infinity`). |
+| fileUploadLimit | string | The file upload limit with suffix (e.g. `kb`, `mb`, `gb`) (defaults to `10mb`). |
 
 ### Config Injection
 
-If you need to get access to the config object inside your services or routers, implement `OnConfig` on your classes and define the following function:
-
-```ts
-import { OnConfig, ServerConfig } from '@steroids/core';
-
-class implements OnConfig {
-
-  onConfig(config: ServerConfig) {
-    // Inject or use...
-  }
-
-}
-```
+If you need to get access to the config object inside your services or routers, use the [Config Hook](#config-hook).
 
 ### Config Expansion
 
@@ -649,12 +835,12 @@ The `ServerError` class is available for responding to users with errors through
 ```ts
 import { ServerError } from '@steroids/core';
 
-const error = new ServerError('Message', 'ERROR_CODE'); // Code defaults to 'UNKNOWN_ERROR' when not provided
+const error = new ServerError('Message', 400, 'ERROR_CODE'); // http code defaults to 500 and error code defaults to 'UNKNOWN_ERROR' when not provided
+const errorWithStack = ServerError.from(new Error('Message'), 400, 'ERROR_CODE');
 
-// res.json(error) --> { error: true, message: 'Message', code: 'ERROR_CODE' }
+// error.respond(res); --> { error: true, message: 'Message', code: 'ERROR_CODE' }
+// errorWithStack.respond(res); --> { error: true, message: 'Message', code: 'ERROR_CODE', stack: '...' }
 ```
-
-> **NOTE:** This class is not an actual extension of the Error class and should not be used when stack trace is needed.
 
 ## Testing
 

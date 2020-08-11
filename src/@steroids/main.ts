@@ -9,6 +9,7 @@ import serverConfig from '../config.json';
 import * as tsConfigPaths from 'tsconfig-paths';
 import paths from '../paths.json';
 import { ServerLogger } from './logger';
+import { ServerEvents } from './events';
 import { RequestHandler, Request, Response, NextFunction } from 'express';
 
 import {
@@ -42,7 +43,8 @@ const CONFIG_DEFAULT: BaseServerConfig = {
   logFileLevels: 'all',
   consoleLogLevels: ['info', 'notice', 'warn', 'error'],
   logFileMaxAge: 7,
-  archiveLogs: true
+  archiveLogs: true,
+  fileUploadLimit: '10mb'
 };
 
 // Override the config file
@@ -51,11 +53,13 @@ let config = _.assign(CONFIG_DEFAULT, serverConfig);
 // Provide server logger globally
 declare global {
 
-  let log: ServerLogger;
+  const log: ServerLogger;
+  const events: ServerEvents;
 
 }
 
 (<any>global).log = new ServerLogger(config);
+(<any>global).events = new ServerEvents();
 
 const app = express();
 const services: any = {};
@@ -128,7 +132,7 @@ function scanDirRec(dir: string): string[] {
 
 }
 
-function injectServices(modules: any): void {
+async function initializeModules(modules: any) {
 
   for ( const name in modules ) {
 
@@ -136,7 +140,11 @@ function injectServices(modules: any): void {
 
     if ( module.onInjection && typeof module.onInjection === 'function' ) {
 
-      module.onInjection(services);
+      events.emitOnce(`${module.__metadata.name}-${module.__metadata.type === ModuleType.Service ? 'service' : 'router'}:inject:before`);
+
+      await module.onInjection(services);
+
+      events.emitOnce(`${module.__metadata.name}-${module.__metadata.type === ModuleType.Service ? 'service' : 'router'}:inject:after`);
 
       log.debug(`Services injected into ${module.__metadata.type === ModuleType.Service ? 'service' : 'router'} "${module.__metadata.name}"`);
 
@@ -144,9 +152,25 @@ function injectServices(modules: any): void {
 
     if ( module.onConfig && typeof module.onConfig === 'function' ) {
 
-      module.onConfig(_.cloneDeep(config));
+      events.emitOnce(`${module.__metadata.name}-${module.__metadata.type === ModuleType.Service ? 'service' : 'router'}:config:before`);
+
+      await module.onConfig(_.cloneDeep(config));
+
+      events.emitOnce(`${module.__metadata.name}-${module.__metadata.type === ModuleType.Service ? 'service' : 'router'}:config:after`);
 
       log.debug(`Config injected into ${module.__metadata.type === ModuleType.Service ? 'service' : 'router'} "${module.__metadata.name}"`);
+
+    }
+
+    if ( module.onInit && typeof module.onInit === 'function' ) {
+
+      events.emitOnce(`${module.__metadata.name}-${module.__metadata.type === ModuleType.Service ? 'service' : 'router'}:init:before`);
+
+      await module.onInit();
+
+      events.emitOnce(`${module.__metadata.name}-${module.__metadata.type === ModuleType.Service ? 'service' : 'router'}:init:after`);
+
+      log.debug(`${module.__metadata.type === ModuleType.Service ? 'Service' : 'Router'} "${module.__metadata.name}" was initialized`);
 
     }
 
@@ -156,7 +180,7 @@ function injectServices(modules: any): void {
 
 function rejectForValidation(res: Response, message: string): void {
 
-  res.status(400).json(new ServerError(message, 'VALIDATION_FAILED'));
+  new ServerError(message, 400, 'VALIDATION_FAILED').respond(res);
 
 }
 
@@ -251,8 +275,8 @@ function createValidationMiddleware(route: RouteDefinition): RequestHandler {
     })
     .catch(error => {
 
-      if ( error.valid === false ) res.status(500).json(new ServerError(error.error ? error.error : 'Invalid request!', 'VALIDATION_FAILED'));
-      else res.status(500).json(new ServerError('Unknown error!\n' + error, 'VALIDATION_FAILED'));
+      if ( error.valid === false ) new ServerError(error.error ? error.error : 'Invalid request!', 500, 'VALIDATION_FAILED').respond(res);
+      else ServerError.from(error, 500, 'VALIDATION_FAILED').respond(res);
 
     });
 
@@ -275,7 +299,7 @@ function installPredictive404(): void {
     });
 
     if ( matches ) next();
-    else res.status(404).json(new ServerError(`Route ${req.path} not found!`, 'ROUTE_NOT_FOUND'));
+    else new ServerError(`Route ${req.path} not found!`, 404, 'ROUTE_NOT_FOUND').respond(res);
 
   });
 
@@ -291,20 +315,16 @@ for ( const file of files ) {
 
 }
 
-// Inject services
-injectServices(services);
-injectServices(routers);
-
 // Install body parsers
 app.use(bodyParser.text());
 app.use(bodyParser.json());
-app.use(bodyParser.raw({ limit: '10mb' }));
+app.use(bodyParser.raw({ limit: config.fileUploadLimit }));
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Install body parsing error
 app.use((error, req, res, next) => {
 
-  res.status(400).json(new ServerError('Invalid body!', 'INVALID_BODY'));
+  new ServerError('Invalid body!', 400, 'INVALID_BODY').respond(res);
 
 });
 
@@ -395,7 +415,7 @@ if ( ! config.predictive404 ) {
 
   app.use('*', (req, res) => {
 
-  res.status(404).json(new ServerError(`Route ${req.path} not found!`, 'ROUTE_NOT_FOUND'));
+  new ServerError(`Route ${req.path} not found!`, 404, 'ROUTE_NOT_FOUND').respond(res);
 
 });
 
@@ -406,9 +426,9 @@ if ( ! config.predictive404 ) {
 // Install error handler
 app.use((error, req, res, next) => {
 
-  log.error(error);
+  log.error('An unknown error has occured:', error);
 
-  if ( ! res.headerSent ) res.status(500).json(new ServerError('An internal error has occurred!'));
+  if ( ! res.headerSent ) new ServerError('An unknown error has occured!').respond(res);
 
 });
 
@@ -417,10 +437,26 @@ log.debug('Error handler installed');
 // Misc
 app.disable('x-powered-by');
 
-// Start the server
-app.listen(config.port, (error: Error) => {
+// Initialize all modules
+initializeModules(services)
+.then(() => {
 
-  if ( error ) log.error('Could not start the server due to an error:', error);
-  else log.notice(`Server started on port ${config.port}`);
+  return initializeModules(routers);
+
+})
+.catch(error => {
+
+  log.error('Could not initialize modules due to an error:', error);
+
+})
+.then(() => {
+
+  // Start the server
+  app.listen(config.port, (error: Error) => {
+
+    if ( error ) log.error('Could not start the server due to an error:', error);
+    else log.notice(`Server started on port ${config.port}`);
+
+  });
 
 });
