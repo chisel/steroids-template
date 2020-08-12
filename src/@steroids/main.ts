@@ -21,8 +21,8 @@ import {
   ModuleType,
   RouteDefinition,
   ValidationType,
-  HeaderValidator,
-  BodyValidator,
+  ValidationDefinition,
+  BodyValidationDefinition,
   ValidatorFunction,
   AsyncValidatorFunction
 } from './core';
@@ -193,26 +193,34 @@ function rejectForValidation(res: Response, message: string): void {
 
 }
 
-function bodyValidation(bodyValidator: BodyValidator, body: any, prefix: string = ''): void|Error {
+async function validateDefinition(
+  definition: ValidationDefinition|BodyValidationDefinition,
+  values: any,
+  originalValues: any,
+  type: 'header'|'query'|'body property',
+  prefix: string = '',
+  recursive?: boolean
+): Promise<void|Error> {
 
-  for ( const key of _.keys(bodyValidator) ) {
+  for ( const key of _.keys(definition) ) {
 
     const keyPath = prefix ? prefix + '.' + key : key;
 
-    if ( typeof bodyValidator[key] === 'function' ) {
+    if ( typeof definition[key] === 'function' ) {
 
-      const validator: ValidatorFunction = <ValidatorFunction>bodyValidator[key];
-      const validationResult = validator(body[key]);
+      const validator = <ValidatorFunction|AsyncValidatorFunction>definition[key];
+      const result = await validator(values[key], originalValues);
 
-      if ( validationResult === false ) return new Error(`Invalid property '${keyPath}' on body!`);
-      if ( validationResult instanceof Error ) return validationResult;
+      if ( result === false ) return new Error(`Invalid ${type} '${keyPath}'!`);
+      if ( result instanceof Error ) return result;
 
     }
-    else {
+    else if ( recursive ) {
 
-      if ( ! body.hasOwnProperty(key) || ! body[key] || typeof body[key] !== 'object' || body[key].constructor !== Object ) return new Error(`Invalid property '${keyPath}' on body!`);
+      if ( ! values.hasOwnProperty(key) || ! values[key] || typeof values[key] !== 'object' || values[key].constructor !== Object )
+        return new Error(`Invalid ${type} '${key}'!`);
 
-      const error = bodyValidation(<BodyValidator>bodyValidator[key], body[key], keyPath);
+      const error = await validateDefinition(<BodyValidationDefinition>definition[key], values[key], originalValues, type, keyPath, recursive);
 
       if ( error ) return error;
 
@@ -232,23 +240,16 @@ function createValidationMiddleware(route: RouteDefinition): RequestHandler {
 
         if ( rule.type === ValidationType.Header ) {
 
-          for ( const key of _.keys(<HeaderValidator>rule.validator) ) {
+          const error = await validateDefinition(<ValidationDefinition>rule.validator, req.headers, req.headers, 'header');
 
-            const header = req.header(key);
-
-            if ( ! header || header.toLowerCase().trim() !== rule.validator[key].toLowerCase().trim() )
-              return new Error(`Invalid header '${ key }'!`);
-
-          }
+          if ( error ) return error;
 
         }
         else if ( rule.type === ValidationType.Query ) {
 
-          for ( const query of <string[]>rule.validator ) {
+          const error = await validateDefinition(<ValidationDefinition>rule.validator, req.query, req.query, 'query');
 
-            if ( ! req.query[query] ) return new Error(`Missing query parameter '${query}'!`);
-
-          }
+          if ( error ) return error;
 
         }
         else if ( rule.type === ValidationType.Body ) {
@@ -256,12 +257,11 @@ function createValidationMiddleware(route: RouteDefinition): RequestHandler {
           if ( ! req.body || typeof req.body !== 'object' || req.body.constructor !== Object )
             return new Error('Invalid body type!');
 
-          const error = bodyValidation(<BodyValidator>rule.validator, req.body);
+          const error = await validateDefinition(<BodyValidationDefinition>rule.validator, req.body, req.body, 'body property');
 
           if ( error ) return error;
 
         }
-        // Custom validation
         else if ( rule.type === ValidationType.Custom ) {
 
           const validationResult = await (<ValidatorFunction|AsyncValidatorFunction>rule.validator)(req);

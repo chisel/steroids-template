@@ -6,9 +6,8 @@ import {
   ValidationRule,
   ValidatorFunction,
   AsyncValidatorFunction,
-  HeaderValidator,
-  BodyValidator,
-  FlatBodyValidator
+  BodyValidationDefinition,
+  ValidationDefinition
 } from './models';
 
 import { Response } from 'express';
@@ -46,6 +45,29 @@ export function Router(config: RouterDecoratorArgs) {
 
 }
 
+/**
+* Resolves reference from raw values.
+*/
+export function resolveRef(ref: string, rawValues: any): any {
+
+  const segments = ref.split('.');
+  let currentRef: any = rawValues;
+
+  for ( const segment of segments ) {
+
+    if ( currentRef === undefined ) return undefined;
+
+    currentRef = currentRef[segment];
+
+  }
+
+  return currentRef;
+
+}
+
+/**
+* Type checks.
+*/
 export namespace type {
 
   /**
@@ -99,12 +121,11 @@ export namespace type {
     };
 
   }
-
   /**
   * Enum type comparison.
   * @param enumerator An enumerator to validate the value against.
   */
-  export function ofenum(enumerator: any): ValidatorFunction {
+  export function inenum(enumerator: any): ValidatorFunction {
 
     return (value: any): boolean => {
 
@@ -117,10 +138,50 @@ export namespace type {
 }
 
 /**
+* Equality comparison.
+*/
+export function equal(val: any): ValidatorFunction {
+
+  return (value: any): boolean => {
+
+    return value === val;
+
+  };
+
+}
+
+/**
+* Equality comparison with value from reference.
+*/
+export function equalRef(ref: string): ValidatorFunction {
+
+  return (value: any, rawValues: any): boolean => {
+
+    return value === resolveRef(ref, rawValues);
+
+  };
+
+}
+
+/**
+* Validates a string against a given regular expression.
+* @param validators A rest argument of validators.
+*/
+export function match(regex: RegExp) {
+
+  return (value: any): boolean => {
+
+    return typeof value === 'string' && !! value.match(regex);
+
+  };
+
+}
+
+/**
 * Validates an object against the given flat body validator (useful for validating arrays of objects).
 * @param bodyValidator A flat body validator.
 */
-export function sub(bodyValidator: FlatBodyValidator): ValidatorFunction {
+export function sub(bodyValidator: ValidationDefinition): ValidatorFunction {
 
   return (value: any): boolean => {
 
@@ -133,19 +194,6 @@ export function sub(bodyValidator: FlatBodyValidator): ValidatorFunction {
     }
 
     return true;
-
-  };
-
-}
-
-/**
-* Equality comparison.
-*/
-export function equal(val: any): ValidatorFunction {
-
-  return (value: any): boolean => {
-
-    return value === val;
 
   };
 
@@ -229,107 +277,168 @@ export function opt(validator: ValidatorFunction): ValidatorFunction {
 }
 
 /**
-* Validates a string against a given regular expression (no string type check!).
-* @param validators A rest argument of validators.
+* Checks if value includes the given value.
 */
-export function match(regex: RegExp) {
+export function include(val: any): ValidatorFunction {
 
-  return (value: any): boolean => {
+  return (value: any): boolean|Error => {
 
-    return !! value.match(regex);
+    return value.includes && value.includes(val);
 
   };
 
 }
 
+/**
+* Checks if value includes the given value by reference.
+*/
+export function includeRef(ref: string): ValidatorFunction {
+
+  return (value: any, rawValues: any): boolean|Error => {
+
+    return value.includes && value.includes(resolveRef(ref, rawValues));
+
+  };
+
+}
+
+/**
+* Checks if value exists.
+*/
+export function exist(value: any): boolean|Error {
+
+  return value !== undefined;
+
+}
+
+/** Casts to number and... */
 export namespace num {
 
   /**
-  * The property must be greater than or equal to the given number.
+  * The value must be within the given range (inclusive).
   */
-  export function min(val: number): ValidatorFunction {
+  export function between(min: number, max: number): ValidatorFunction {
 
     return (value: any): boolean => {
 
-      return value >= val;
+      return +value >= min && +value <= max;
 
     };
 
   }
 
   /**
-  * The property must be less than or equal to the given number.
+  * The value must be within the given range (exclusive).
   */
-  export function max(val: number): ValidatorFunction {
+  export function betweenEx(min: number, max: number): ValidatorFunction {
 
     return (value: any): boolean => {
 
-      return value <= val;
+      return +value > min && +value < max;
 
     };
 
   }
 
   /**
-  * The property must be within the given range (inclusive).
-  */
-  export function range(min: number, max: number): ValidatorFunction {
-
-    return (value: any): boolean => {
-
-      return value >= min && value <= max;
-
-    };
-
-  }
-
-  /**
-  * The property must be greater than the given number.
+  * The value must be greater than the given number.
   */
   export function gt(val: number): ValidatorFunction {
 
     return (value: any): boolean => {
 
-      return value > val;
+      return +value > val;
 
     };
 
   }
 
   /**
-  * The property must be greater than or equal to the given number.
+  * The value must be greater than or equal to the given number.
   */
   export function gte(val: number): ValidatorFunction {
 
     return (value: any): boolean => {
 
-      return value >= val;
+      return +value >= val;
 
     };
 
   }
 
   /**
-  * The property must be less than the given number.
+  * The value must be less than the given number.
   */
   export function lt(val: number): ValidatorFunction {
 
     return (value: any): boolean => {
 
-      return value < val;
+      return +value < val;
 
     };
 
   }
 
   /**
-  * The property must be less than or equal to the given number.
+  * The value must be less than or equal to the given number.
   */
   export function lte(val: number): ValidatorFunction {
 
     return (value: any): boolean => {
 
-      return value <= val;
+      return +value <= val;
+
+    };
+
+  }
+
+  /**
+  * The value must be greater than the given value by reference.
+  */
+  export function gtRef(ref: string): ValidatorFunction {
+
+    return (value: any, rawValues: any): boolean => {
+
+      return +value > +resolveRef(ref, rawValues);
+
+    };
+
+  }
+
+  /**
+  * The value must be greater than or equal to the given value by reference.
+  */
+  export function gteRef(ref: string): ValidatorFunction {
+
+    return (value: any, rawValues: any): boolean => {
+
+      return +value >= +resolveRef(ref, rawValues);
+
+    };
+
+  }
+
+  /**
+  * The value must be less than the given value by reference.
+  */
+  export function ltRef(ref: string): ValidatorFunction {
+
+    return (value: any, rawValues: any): boolean => {
+
+      return +value < +resolveRef(ref, rawValues);
+
+    };
+
+  }
+
+  /**
+  * The value must be less than or equal to the given value by reference.
+  */
+  export function lteRef(ref: string): ValidatorFunction {
+
+    return (value: any, rawValues: any): boolean => {
+
+      return +value <= +resolveRef(ref, rawValues);
 
     };
 
@@ -337,12 +446,52 @@ export namespace num {
 
 }
 
+/** Checks length of value. */
 export namespace len {
 
   /**
-  * The length of the property must be greater than or equal to the given number.
+  * The length of value must be within the given range (inclusive).
   */
-  export function min(val: number): ValidatorFunction {
+  export function between(min: number, max: number): ValidatorFunction {
+
+    return (value: any): boolean => {
+
+      return value.length >= min && value.length <= max;
+
+    };
+
+  }
+
+  /**
+  * The length of value must be within the given range (exclusive).
+  */
+  export function betweenEx(min: number, max: number): ValidatorFunction {
+
+    return (value: any): boolean => {
+
+      return value.length > min && value.length < max;
+
+    };
+
+  }
+
+  /**
+  * The length of value must be greater than the given number.
+  */
+  export function gt(val: number): ValidatorFunction {
+
+    return (value: any): boolean => {
+
+      return value.length > val;
+
+    };
+
+  }
+
+  /**
+  * The length of value must be greater than or equal to the given number.
+  */
+  export function gte(val: number): ValidatorFunction {
 
     return (value: any): boolean => {
 
@@ -353,9 +502,22 @@ export namespace len {
   }
 
   /**
-  * The length of the property must be less than or equal to the given number.
+  * The length of value must be less than the given number.
   */
-  export function max(val: number): ValidatorFunction {
+  export function lt(val: number): ValidatorFunction {
+
+    return (value: any): boolean => {
+
+      return value.length < val;
+
+    };
+
+  }
+
+  /**
+  * The length of value must be less than or equal to the given number.
+  */
+  export function lte(val: number): ValidatorFunction {
 
     return (value: any): boolean => {
 
@@ -366,13 +528,52 @@ export namespace len {
   }
 
   /**
-  * The length of the property must be within the given range.
+  * The length of value must be greater than the given value by reference.
   */
-  export function range(min: number, max: number): ValidatorFunction {
+  export function gtRef(ref: string): ValidatorFunction {
 
-    return (value: any): boolean => {
+    return (value: any, rawValues: any): boolean => {
 
-      return value.length >= min && value.length <= max;
+      return value.length > +resolveRef(ref, rawValues);
+
+    };
+
+  }
+
+  /**
+  * The length of value must be greater than or equal to the given value by reference.
+  */
+  export function gteRef(ref: string): ValidatorFunction {
+
+    return (value: any, rawValues: any): boolean => {
+
+      return value.length >= +resolveRef(ref, rawValues);
+
+    };
+
+  }
+
+  /**
+  * The length of value must be less than the given value by reference.
+  */
+  export function ltRef(ref: string): ValidatorFunction {
+
+    return (value: any, rawValues: any): boolean => {
+
+      return value.length < +resolveRef(ref, rawValues);
+
+    };
+
+  }
+
+  /**
+  * The length of value must be less than or equal to the given value by reference.
+  */
+  export function lteRef(ref: string): ValidatorFunction {
+
+    return (value: any, rawValues: any): boolean => {
+
+      return value.length <= +resolveRef(ref, rawValues);
 
     };
 
@@ -380,9 +581,9 @@ export namespace len {
 
 }
 
-export function header(validator: HeaderValidator): ValidationRule { return { type: ValidationType.Header, validator: validator }; }
-export function query(validator: string[]): ValidationRule { return { type: ValidationType.Query, validator: validator }; }
-export function body(validator: BodyValidator): ValidationRule { return { type: ValidationType.Body, validator: validator }; }
+export function headers(validator: ValidationDefinition): ValidationRule { return { type: ValidationType.Header, validator: validator }; }
+export function queries(validator: ValidationDefinition): ValidationRule { return { type: ValidationType.Query, validator: validator }; }
+export function body(validator: BodyValidationDefinition): ValidationRule { return { type: ValidationType.Body, validator: validator }; }
 export function custom(validator: AsyncValidatorFunction|ValidatorFunction): ValidationRule { return { type: ValidationType.Custom, validator: validator } };
 
 export class ServerError {

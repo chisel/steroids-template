@@ -120,27 +120,21 @@ export enum ValidationType {
 export interface ValidationRule {
 
   type: ValidationType;
-  validator: HeaderValidator|BodyValidator|ValidatorFunction|AsyncValidatorFunction|string[];
+  validator: BodyValidationDefinition|ValidationDefinition|ValidatorFunction|AsyncValidatorFunction;
 
 }
 
-export interface HeaderValidator {
+export interface BodyValidationDefinition {
 
-  [key: string]: string;
-
-}
-
-export interface BodyValidator {
-
-  [key: string]: ValidatorFunction|BodyValidator;
+  [key: string]: ValidatorFunction|BodyValidationDefinition;
 
 }
 
-export interface FlatBodyValidator {
+export interface ValidationDefinition {
 
-  [key: string]: ValidatorFunction
+  [key: string]: ValidatorFunction;
 
 }
 
-export type ValidatorFunction = (value: any) => boolean|Error;
-export type AsyncValidatorFunction = (value: any) => Promise<boolean|Error>;
+export type ValidatorFunction = (value: any, rawValues?: any) => boolean|Error;
+export type AsyncValidatorFunction = (value: any, rawValues?: any) => Promise<boolean|Error>;
