@@ -40,6 +40,9 @@ You can use this repository/template directly or through the [Steroids CLI](http
       - [Custom Validation](#custom-validation)
       - [Custom Async Validation](#custom-async-validation)
       - [Custom Error Messages](#custom-error-messages)
+    - [CORS Policy](#cors-policy)
+      - [CORS Policy Example](#cors-policy-example)
+      - [Modular CORS Policy Example](#modular-cors-policy-example)
     - [Serving Static Files](#serving-static-files)
   - [Module Hooks](#module-hooks)
     - [Injection Hook](#injection-hook)
@@ -51,6 +54,8 @@ You can use this repository/template directly or through the [Steroids CLI](http
     - [Saving Logs on Disk](#saving-logs-on-disk)
       - [Logs Max Age Control](#logs-max-age-control)
     - [Log Levels](#log-levels)
+    - [Built-in Logging](#built-in-logging)
+      - [Sensitive Logs](#sensitive-logs)
   - [Server Config](#server-config)
     - [Config Injection](#config-injection)
     - [Config Expansion](#config-expansion)
@@ -165,6 +170,7 @@ The `@Router` decorator accepts the following properties:
 | name | string | The name of the router (only used for logging). |
 | priority | number | Routers are sorted by priority before mounting their middleware in the Express stack (defaults to `0`). |
 | routes | RouteDefinition[] | An array of route definitions. |
+| corsPolicy | cors.CorsOptions | No | [CORS policy](#cors-policy) for all routes in router (unless overridden). |
 
 The `RouteDefinition` interface is as follows:
 
@@ -174,6 +180,7 @@ The `RouteDefinition` interface is as follows:
 | handler | string | Yes | The name of the route handler function (must exist in the router class). |
 | method | RouteMethod | No | The HTTP method of the route. If not provided, the route will cover all methods (global). |
 | validate | ValidationRule[] | No | Used to easily install validators for validating input (body, header, etc.) |
+| corsPolicy | cors.CorsOptions | No | [CORS policy](#cors-policy) for the route (overrides router CORS policy). |
 
 The following is an example of a simple router which defines the route `GET /test` linked to the `Router1.routeHandler1` route handler:
 
@@ -472,11 +479,11 @@ function parity(odd: boolean): ValidatorFunction {
 }
 ```
 
-> **NOTE:** [Read about custom error messages and the ValidationResult type.](#custom-error-messages)
+> **NOTE:** [Read about custom error messages.](#custom-error-messages)
 
 #### Custom Validation
 
-If you need to do something more complex or unique and still want to benefit from reusability and the auto-respond feature of the validators, you can create a function with this signature `(req: Request) => boolean|ValidationResult` and pass it to the `custom` method:
+If you need to do something more complex or unique and still want to benefit from reusability and the auto-respond feature of the validators, you can create a function with this signature `(req: Request) => boolean|Error` and pass it to the `custom` method:
 
 ```ts
 import { Router, RouteMethod, custom } from '@steroids/core';
@@ -512,7 +519,7 @@ function basicAuthValidator(req: Request): boolean {
 }
 ```
 
-> **NOTE:** [Read about custom error messages and the ValidationResult type.](#custom-error-messages)
+> **NOTE:** [Read about custom error messages.](#custom-error-messages)
 
 #### Custom Async Validation
 
@@ -569,23 +576,82 @@ async function userExistsAsync(req: Request) {
 }
 ```
 
-> **NOTE:** [Read about custom error messages and the ValidationResult type.](#custom-error-messages)
+> **NOTE:** [Read about custom error messages.](#custom-error-messages)
 
 #### Custom Error Messages
 
-All custom validators and custom body validators can return a ValidationResult object instead to customize the error message.
-
-The returned object must contain `valid` (boolean) and `error` (string) properties. If `error` string is missing, the default message would be used instead.
+All custom validators and custom body validators can return an error object instead to customize the error message.
 
 ```ts
 function customValidator(req: Request) {
 
   // Invalid query
-  if ( ! req.query.token ) return { valid: false, error: 'You must provide your auth token with all requests!' };
+  if ( ! req.query.token ) return new Error('You must provide your auth token with all requests!');
 
   return true;
 
 }
+```
+
+### CORS Policy
+
+CORS can be setup for each router using `corsPolicy` router options in `Router` decorator. This will apply the policy on all routes defined in the router.
+
+Individual routes can also define their own policy to override the router's (if any) using the `corsPolicy` route option.
+
+CORS configuration is identical to the [**cors** npm package options](https://www.npmjs.com/package/cors#configuration-options) **excluding the `preflightContinue` option**.
+
+#### CORS Policy Example
+
+```ts
+import { Router, RouteMethod } from '@steroids/core';
+
+@Router({
+  'example',
+  corsPolicy: {
+    origin: [
+      'http://example.com',
+      'https://example.com'
+    ]
+  },
+  routes: [
+    // Router CORS policy will be applied to the following route
+    { path: '/with-cors', method: RouteMethod.GET, handler: 'withCors' },
+    // Router CORS policy is overridden on the following route
+    { path: '/without-cors', method: RouteMethod.GET, handler: 'withoutCors', corsPolicy: { origin: true } }
+  ]
+})
+export class ExampleRouter {  }
+```
+
+#### Modular CORS Policy Example
+
+When the same policy needs to be applied to multiple routers, it's a good idea to save the policy in a JSON file and use it everywhere:
+
+**cors-policy.json**
+```json
+{
+  "origin": [
+    "http://example.com",
+    "https://example.com"
+  ],
+  "methods": "GET,POST"
+}
+```
+
+**example.router.ts**
+```ts
+import { Router, RouteMethod } from '@steroids/core';
+import corsPolicy from '../cors-policy.json';
+
+@Router({
+  'example',
+  corsPolicy,
+  routes: [
+    { path: '/with-cors', method: RouteMethod.GET, handler: 'withCors' }
+  ]
+})
+export class ExampleRouter {  }
 ```
 
 ### Serving Static Files
@@ -785,6 +851,19 @@ However, if max age is set to 0 (by changing `logFileMaxAge` in [server config](
 
 Both the console and disk can be customized to include any levels of logs. By default, the console displays all levels except for `debug` and all log levels are saved on disk. To customize those behaviors, change `consoleLogLevels` and `logFileLevels` in the [server config](#server-config).
 
+### Built-in Logging
+
+The server logs in three situations:
+  1. When starting the server (`debug` level)
+  2. When an uncaught error is thrown (`error` level)
+  3. When a request is made to the server (`debug` level)
+
+By default, request headers are not included in the logs. This can be changed by setting `logRequestHeaders` in the [server config](#server-config).
+
+#### Sensitive Logs
+
+When logging request headers is enabled, the `authorization` header value (if present) will be replaced with `HIDDEN` in logs to avoid logging sensitive information. This behavior can also be applied to other headers and query parameters (e.g. when using `token` query parameter) by setting `hideHeadersInLogs` and `hideQueryParamsInLogs` in the [server config](#server-config).
+
 ## Server Config
 
 The server has a configuration file located at `src/config.json` with the following settings:
@@ -799,6 +878,9 @@ The server has a configuration file located at `src/config.json` with the follow
 | logFileMaxAge | number | The maximum age of a logs file in days. When passed, the file will either get archived or deleted (defaults to `7`). |
 | logFileLevels | all&vert;Array<debug&vert;info&vert;notice&vert;warn&vert;error> | An array of log levels to write on disk or `all` (no array) to write all levels (defaults to `'all'`). |
 | archiveLogs | boolean | Will archive logs written on disk that are older than their max age (defaults to `true`). |
+| logRequestHeaders | boolean | If `true` will log request headers (defaults to `false`). |
+| hideHeadersInLogs | Array&lt;string&gt; | A list of header names to hide in logs when logging request headers. |
+| hideQueryParamsInLogs | Array&lt;string&gt; | A list of query parameter names to hide in logs. |
 | predictive404 | boolean | If true, installs a 404 handler at the top of the stack instead (this can be configured through `predictive404Priority`), which predicts if path will match with any middleware in the stack and rejects the request with a 404 error if not. This is useful as requests that will eventually result in a 404 error won't go through the stack in the first place. Please note that the prediction ignores all `*` and `/` routes (defaults to `false`). |
 | predictive404Priority | number | The priority of the predictive 404 middleware (defaults to `Infinity`). |
 | fileUploadLimit | string | The file upload limit with suffix (e.g. `kb`, `mb`, `gb`) (defaults to `10mb`). |

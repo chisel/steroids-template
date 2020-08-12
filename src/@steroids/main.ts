@@ -2,7 +2,9 @@
 import _ from 'lodash';
 import fs from 'fs-extra';
 import path from 'path';
+import { URL } from 'url';
 import express from 'express';
+import cors from 'cors';
 import bodyParser from 'body-parser';
 import { DateTime } from 'luxon';
 import serverConfig from '../config.json';
@@ -22,8 +24,7 @@ import {
   HeaderValidator,
   BodyValidator,
   ValidatorFunction,
-  AsyncValidatorFunction,
-  ValidationResult
+  AsyncValidatorFunction
 } from './core';
 
 // Register path alias resolver
@@ -44,11 +45,19 @@ const CONFIG_DEFAULT: BaseServerConfig = {
   consoleLogLevels: ['info', 'notice', 'warn', 'error'],
   logFileMaxAge: 7,
   archiveLogs: true,
-  fileUploadLimit: '10mb'
+  fileUploadLimit: '10mb',
+  excludeHeadersInLogs: [],
+  logRequestHeaders: false,
+  excludeQueryParamsInLogs: []
 };
 
 // Override the config file
-let config = _.assign(CONFIG_DEFAULT, serverConfig);
+const config = _.assign(CONFIG_DEFAULT, serverConfig);
+
+// Sanitize config
+config.excludeHeadersInLogs = config.excludeHeadersInLogs.map(h => h.toLowerCase());
+config.excludeHeadersInLogs.push('authorization'); // Hide authorization header by default
+config.excludeQueryParamsInLogs = config.excludeQueryParamsInLogs.map(q => q.toLowerCase());
 
 // Provide server logger globally
 declare global {
@@ -196,7 +205,7 @@ function bodyValidation(bodyValidator: BodyValidator, body: any, prefix: string 
       const validationResult = validator(body[key]);
 
       if ( validationResult === false ) return new Error(`Invalid property '${keyPath}' on body!`);
-      if ( typeof validationResult !== 'boolean' && ! validationResult.valid ) return new Error(validationResult.error || `Invalid property '${keyPath}' on body!`);
+      if ( validationResult instanceof Error ) return validationResult;
 
     }
     else {
@@ -217,7 +226,7 @@ function createValidationMiddleware(route: RouteDefinition): RequestHandler {
 
   return (req: Request, res: Response, next: NextFunction) => {
 
-    (async (): Promise<ValidationResult> => {
+    (async (): Promise<boolean|Error> => {
 
       for ( const rule of route.validate ) {
 
@@ -228,7 +237,7 @@ function createValidationMiddleware(route: RouteDefinition): RequestHandler {
             const header = req.header(key);
 
             if ( ! header || header.toLowerCase().trim() !== rule.validator[key].toLowerCase().trim() )
-              return { valid: false, error: `Invalid header '${ key }'!` };
+              return new Error(`Invalid header '${ key }'!`);
 
           }
 
@@ -237,7 +246,7 @@ function createValidationMiddleware(route: RouteDefinition): RequestHandler {
 
           for ( const query of <string[]>rule.validator ) {
 
-            if ( ! req.query[query] ) return { valid: false, error: `Missing query parameter '${query}'!` };
+            if ( ! req.query[query] ) return new Error(`Missing query parameter '${query}'!`);
 
           }
 
@@ -245,11 +254,11 @@ function createValidationMiddleware(route: RouteDefinition): RequestHandler {
         else if ( rule.type === ValidationType.Body ) {
 
           if ( ! req.body || typeof req.body !== 'object' || req.body.constructor !== Object )
-            return { valid: false, error: `Invalid body type!` };
+            return new Error('Invalid body type!');
 
           const error = bodyValidation(<BodyValidator>rule.validator, req.body);
 
-          if ( error ) return { valid: false, error: error.message };
+          if ( error ) return error;
 
         }
         // Custom validation
@@ -257,20 +266,20 @@ function createValidationMiddleware(route: RouteDefinition): RequestHandler {
 
           const validationResult = await (<ValidatorFunction|AsyncValidatorFunction>rule.validator)(req);
 
-          if ( validationResult === false ) return { valid: false, error: 'Invalid request!' };
-          if ( typeof validationResult !== 'boolean' && ! validationResult.valid ) return { valid: false, error: validationResult.error || 'Invalid request!' };
+          if ( validationResult === false ) return new Error('Invalid request!');
+          if ( validationResult instanceof Error ) return validationResult;
 
         }
 
       }
 
-      return { valid: true };
+      return true;
 
     })()
     .then(result => {
 
-      if ( result.valid ) next();
-      else rejectForValidation(res, result.error);
+      if ( result === true ) next();
+      else rejectForValidation(res, (<Error>result).message);
 
     })
     .catch(error => {
@@ -380,13 +389,62 @@ for ( const name in routers ) {
     // Create route logger
     handlers.push((req, res, next) => {
 
-      log.debug(req.method.toUpperCase(), req.path);
+      // Parse URL
+      const url = new URL(req.originalUrl);
+
+      // Hide params based on config
+      for ( const param of url.searchParams.keys() ) {
+
+        if ( config.excludeQueryParamsInLogs.includes(param.toLowerCase()) )
+          url.searchParams.set(param, 'HIDDEN');
+
+      }
+
+      // Log headers
+      if ( config.logRequestHeaders ) {
+
+        // Hide headers based on config
+        const headers = _.clone(req.headers);
+
+        for ( const header of config.excludeHeadersInLogs ) {
+
+          if ( headers.hasOwnProperty(header) ) headers[header] = 'HIDDEN';
+
+        }
+
+        // Log headers
+        let headersLog = 'HEADERS';
+
+        for ( const header in headers ) {
+
+          headersLog += `\n${header} ${headers[header]}`;
+
+        }
+
+        log.debug(headersLog);
+
+      }
+
+      // Log URL
+      log.debug(req.method.toUpperCase(), url.toString());
 
       next();
 
     });
     // Create route validator if necessary
     if ( route.validate ) handlers.push(createValidationMiddleware(route));
+    // Add CORS handler
+    const policy = route.corsPolicy || router.__metadata.corsPolicy || { origin: true };
+
+    handlers.push(cors({
+      origin: policy.origin,
+      methods: policy.methods,
+      allowedHeaders: policy.allowedHeaders,
+      exposedHeaders: policy.exposedHeaders,
+      credentials: policy.credentials,
+      maxAge: policy.maxAge,
+      optionsSuccessStatus: policy.optionsSuccessStatus
+    }));
     // Add the route handler provided by user
     handlers.push(router[route.handler].bind(router));
 

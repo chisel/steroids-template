@@ -1,5 +1,6 @@
 import { ServerConfig } from '../config.model';
 export { ServerConfig } from '../config.model';
+import { CorsOptions } from 'cors';
 
 export interface BaseServerConfig {
 
@@ -13,6 +14,9 @@ export interface BaseServerConfig {
   logFileLevels: ('debug'|'info'|'notice'|'warn'|'error')[]|'all';
   logFileMaxAge: number;
   archiveLogs: boolean;
+  excludeQueryParamsInLogs: string[];
+  excludeHeadersInLogs: string[];
+  logRequestHeaders: boolean;
   fileUploadLimit: string;
 
 }
@@ -27,6 +31,19 @@ export interface RouterDecoratorArgs extends ModuleDecoratorArgs {
 
   routes: RouteDefinition[];
   priority?: number;
+  corsPolicy?: CORSPolicy;
+
+}
+
+export interface CORSPolicy {
+
+  origin?: CorsOptions['origin'];
+  methods?: CorsOptions['methods'];
+  allowedHeaders?: CorsOptions['allowedHeaders'];
+  exposedHeaders?: CorsOptions['exposedHeaders'];
+  credentials?: CorsOptions['credentials'];
+  maxAge?: CorsOptions['maxAge'];
+  optionsSuccessStatus?: CorsOptions['optionsSuccessStatus'];
 
 }
 
@@ -36,6 +53,7 @@ export interface RouteDefinition {
   handler: string;
   method?: RouteMethod;
   validate?: ValidationRule[];
+  corsPolicy?: CORSPolicy;
 
 }
 
@@ -68,6 +86,7 @@ export interface ModuleMetadata {
   type: ModuleType;
   routes?: RouteDefinition[];
   priority?: number;
+  corsPolicy?: CORSPolicy;
 
 }
 
@@ -123,12 +142,5 @@ export interface FlatBodyValidator {
 
 }
 
-export type ValidatorFunction = (value: any) => boolean|ValidationResult;
-export type AsyncValidatorFunction = (value: any) => Promise<boolean|ValidationResult>;
-
-export interface ValidationResult {
-
-  valid: boolean;
-  error?: string;
-
-}
+export type ValidatorFunction = (value: any) => boolean|Error;
+export type AsyncValidatorFunction = (value: any) => Promise<boolean|Error>;

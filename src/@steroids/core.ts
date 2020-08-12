@@ -6,7 +6,6 @@ import {
   ValidationRule,
   ValidatorFunction,
   AsyncValidatorFunction,
-  ValidationResult,
   HeaderValidator,
   BodyValidator,
   FlatBodyValidator
@@ -39,7 +38,8 @@ export function Router(config: RouterDecoratorArgs) {
       name: config.name,
       type: ModuleType.Router,
       routes: config.routes,
-      priority: config.priority || 0
+      priority: config.priority || 0,
+      corsPolicy: config.corsPolicy
     };
 
   };
@@ -71,7 +71,7 @@ export namespace type {
   */
   export function array(validator?: ValidatorFunction, arrayValidator?: ValidatorFunction): ValidatorFunction {
 
-    return (value: any): boolean|ValidationResult => {
+    return (value: any): boolean|Error => {
 
       if ( ! value || typeof value !== 'object' || value.constructor !== Array ) return false;
 
@@ -82,7 +82,7 @@ export namespace type {
           const result = validator(item);
 
           if ( result === false ) return false;
-          if ( typeof result !== 'boolean' && ! result.valid ) return result;
+          if ( result instanceof Error ) return result;
 
         }
 
@@ -157,7 +157,7 @@ export function equal(val: any): ValidatorFunction {
 */
 export function or(...validators: Array<ValidatorFunction>): ValidatorFunction {
 
-  return (value: any): boolean|ValidationResult => {
+  return (value: any): boolean|Error => {
 
     let orCheck: boolean = false;
 
@@ -165,7 +165,7 @@ export function or(...validators: Array<ValidatorFunction>): ValidatorFunction {
 
       const result = validator(value);
 
-      orCheck = orCheck || (typeof result === 'boolean' ? result : result.valid);
+      orCheck = orCheck || (typeof result === 'boolean' ? result : false);
 
     }
 
@@ -181,14 +181,14 @@ export function or(...validators: Array<ValidatorFunction>): ValidatorFunction {
 */
 export function and(...validators: Array<ValidatorFunction>): ValidatorFunction {
 
-  return (value: any): boolean|ValidationResult => {
+  return (value: any): boolean|Error => {
 
     for ( const validator of validators ) {
 
       const result = validator(value);
 
       if ( result === false ) return false;
-      if ( typeof result !== 'boolean' && ! result.valid ) return result;
+      if ( result instanceof Error ) return result;
 
     }
 
@@ -204,11 +204,11 @@ export function and(...validators: Array<ValidatorFunction>): ValidatorFunction 
 */
 export function not(validator: ValidatorFunction): ValidatorFunction {
 
-  return (value: any): boolean|ValidationResult => {
+  return (value: any): boolean|Error => {
 
     const result = validator(value);
 
-    return typeof result === 'boolean' ? ! result : ! result.valid;
+    return result !== true;
 
   };
 
@@ -220,7 +220,7 @@ export function not(validator: ValidatorFunction): ValidatorFunction {
 */
 export function opt(validator: ValidatorFunction): ValidatorFunction {
 
-  return (value: any): boolean|ValidationResult => {
+  return (value: any): boolean|Error => {
 
     return value === undefined ? true : validator(value);
 
@@ -278,6 +278,58 @@ export namespace num {
     return (value: any): boolean => {
 
       return value >= min && value <= max;
+
+    };
+
+  }
+
+  /**
+  * The property must be greater than the given number.
+  */
+  export function gt(val: number): ValidatorFunction {
+
+    return (value: any): boolean => {
+
+      return value > val;
+
+    };
+
+  }
+
+  /**
+  * The property must be greater than or equal to the given number.
+  */
+  export function gte(val: number): ValidatorFunction {
+
+    return (value: any): boolean => {
+
+      return value >= val;
+
+    };
+
+  }
+
+  /**
+  * The property must be less than the given number.
+  */
+  export function lt(val: number): ValidatorFunction {
+
+    return (value: any): boolean => {
+
+      return value < val;
+
+    };
+
+  }
+
+  /**
+  * The property must be less than or equal to the given number.
+  */
+  export function lte(val: number): ValidatorFunction {
+
+    return (value: any): boolean => {
+
+      return value <= val;
 
     };
 
