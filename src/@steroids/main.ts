@@ -6,13 +6,16 @@ import { URL } from 'url';
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
+import cookieParser from 'cookie-parser';
 import { DateTime } from 'luxon';
 import serverConfig from '../config.json';
 import * as tsConfigPaths from 'tsconfig-paths';
 import paths from '../paths.json';
-import { ServerLogger } from './logger';
+import { ServerLogger, ServerLoggerCore } from './logger';
 import { ServerEvents } from './events';
-import { RequestHandler, Request, Response, NextFunction } from 'express';
+import { ServerSessionManager, ServerSessionManagerInternal } from './session';
+import { RequestHandler } from 'express';
+import { Request, Response, NextFunction } from './models';
 
 import {
   ServerError,
@@ -48,7 +51,8 @@ const CONFIG_DEFAULT: BaseServerConfig = {
   fileUploadLimit: '10mb',
   excludeHeadersInLogs: [],
   logRequestHeaders: false,
-  excludeQueryParamsInLogs: []
+  excludeQueryParamsInLogs: [],
+  cookieSecret: undefined
 };
 
 // Override the config file
@@ -64,11 +68,13 @@ declare global {
 
   const log: ServerLogger;
   const events: ServerEvents;
+  const session: ServerSessionManager;
 
 }
 
-(<any>global).log = new ServerLogger(config);
+(<any>global).log = new ServerLogger(new ServerLoggerCore(config));
 (<any>global).events = new ServerEvents();
+(<any>global).session = new ServerSessionManagerInternal(!! config.cookieSecret);
 
 const app = express();
 const services: any = {};
@@ -336,6 +342,19 @@ app.use((error, req, res, next) => {
   new ServerError('Invalid body!', 400, 'INVALID_BODY').respond(res);
 
 });
+
+// Install cookie parser
+app.use(cookieParser(config.cookieSecret));
+
+// Install cookie parser error handler
+app.use((error, req, res, next) => {
+
+  new ServerError('Invalid cookies!', 400, 'INVALID_COOKIES').respond(res);
+
+});
+
+// Install session manager middleware
+app.use((<ServerSessionManagerInternal>session).middleware);
 
 // Sort routers based on priority
 routers = _.orderBy(routers, (router: BasicModule) => router.__metadata.priority, ['desc']);

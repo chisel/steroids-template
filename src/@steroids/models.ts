@@ -1,6 +1,8 @@
 import { ServerConfig } from '../config.model';
 export { ServerConfig } from '../config.model';
 import { CorsOptions } from 'cors';
+export { Response, NextFunction } from 'express';
+import { Request as OriginalRequest } from 'express';
 
 export interface BaseServerConfig {
 
@@ -18,6 +20,13 @@ export interface BaseServerConfig {
   excludeHeadersInLogs: string[];
   logRequestHeaders: boolean;
   fileUploadLimit: string;
+  cookieSecret: string;
+
+}
+
+export interface Request extends OriginalRequest {
+
+  sessionId: string;
 
 }
 

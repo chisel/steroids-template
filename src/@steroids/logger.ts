@@ -10,9 +10,103 @@ import { ServerConfig } from './models';
 
 export class ServerLogger {
 
-  private writer: LogWriter;
+  constructor(
+    private __core: ServerLoggerCore,
+    private __sessionId?: string
+  ) { }
 
-  constructor(private config: ServerConfig) {
+  /**
+  * Prints a message at debug level.
+  */
+  public debug(message: any, ...additionalMessages: any[]) {
+
+    const log = this.__core.formatLog('debug', [message, ...additionalMessages]);
+
+    // Log to console
+    if ( this.__core.canLog('console', 'debug') ) console.debug(log);
+
+    // Log to file
+    if ( this.__core.canLog('file', 'debug') ) this.__core.writer.writeToDisk(log);
+
+  }
+
+  /**
+  * Prints a message at info level.
+  */
+  public info(message: any, ...additionalMessages: any[]) {
+
+    const log = this.__core.formatLog('info', [message, ...additionalMessages], this.__sessionId);
+
+    // Log to console
+    if ( this.__core.canLog('console', 'info') ) console.log(log);
+
+    // Log to file
+    if ( this.__core.canLog('file', 'info') ) this.__core.writer.writeToDisk(log);
+
+  }
+
+  /**
+  * Prints a message at notice level.
+  */
+  public notice(message: any, ...additionalMessages: any[]) {
+
+    const log = this.__core.formatLog('notice', [message, ...additionalMessages], this.__sessionId);
+
+    // Log to console
+    if ( this.__core.canLog('console', 'notice') ) console.log(log);
+
+    // Log to file
+    if ( this.__core.canLog('file', 'notice') ) this.__core.writer.writeToDisk(log);
+
+  }
+
+  /**
+  * Prints a message at warn level.
+  */
+  public warn(message: any, ...additionalMessages: any[]) {
+
+    const log = this.__core.formatLog('warn', [message, ...additionalMessages], this.__sessionId);
+
+    // Log to console
+    if ( this.__core.canLog('console', 'warn') ) console.warn(log);
+
+    // Log to file
+    if ( this.__core.canLog('file', 'warn') ) this.__core.writer.writeToDisk(log);
+
+  }
+
+  /**
+  * Prints a message at error level.
+  */
+  public error(message: any, ...additionalMessages: any[]) {
+
+    const log = this.__core.formatLog('error', [message, ...additionalMessages], this.__sessionId);
+
+    // Log to console
+    if ( this.__core.canLog('console', 'error') ) console.error(log);
+
+    // Log to file
+    if ( this.__core.canLog('file', 'error') ) this.__core.writer.writeToDisk(log);
+
+  }
+
+  /**
+  * Returns a new logger which prefixes all logs with the given session ID.
+  * @param sessionId A session ID.
+  */
+  public id(sessionId: string): Omit<ServerLogger, 'id'> {
+
+    return new ServerLogger(this.__core, sessionId);
+
+  }
+
+}
+
+export class ServerLoggerCore {
+
+  public writer: LogWriter;
+
+  constructor(public config: ServerConfig) {
 
     // Reset timezone to local if it is invalid
     if ( ! DateTime.local().setZone(config.timezone).isValid ) {
@@ -20,7 +114,13 @@ export class ServerLogger {
       const defaultZone = DateTime.local().zone.name;
 
       // Show warning
-      this.warn(`Invalid server timezone "${config.timezone}"! Timezone is set to "${defaultZone}"`);
+      const log = this.formatLog('warn', [`Invalid server timezone "${config.timezone}"! Timezone is set to "${defaultZone}"`]);
+
+      // Log to console
+      if ( this.canLog('console', 'warn') ) console.warn(log);
+
+      // Log to file
+      if ( this.canLog('file', 'warn') ) this.writer.writeToDisk(log);
 
       config.timezone = defaultZone;
 
@@ -46,7 +146,7 @@ export class ServerLogger {
   * @param level Log level.
   * @param messages An array of messages.
   */
-  private formatLog(level: 'debug'|'info'|'notice'|'warn'|'error', messages: any[]): string {
+  public formatLog(level: 'debug'|'info'|'notice'|'warn'|'error', messages: any[], sessionId?: string): string {
 
     const levelColors = {
       debug: 'gray',
@@ -56,6 +156,7 @@ export class ServerLogger {
       error: 'redBright'
     };
     let logTime = `[${DateTime.local().setZone(this.config.timezone).toFormat('dd-LL-yyyy HH:mm:ss:u')}]`;
+    let logSession = `<${sessionId}>`;
     let logLevel = level.toUpperCase();
     let logMessage = messages
     .map(message => typeof message === 'object' ? inspect(message, false, 2, this.config.colorfulLogs) : message)
@@ -65,12 +166,13 @@ export class ServerLogger {
     if ( this.config.colorfulLogs ) {
 
       logTime = chalk.greenBright(logTime);
+      logSession = chalk.magenta(logSession);
       logLevel = chalk.bold[levelColors[level]](logLevel.padEnd(6));
       logMessage = chalk[levelColors[level]](logMessage);
 
     }
 
-    return `${logTime} ${logLevel} ${logMessage}`;
+    return `${logTime} ${sessionId ? logSession + ' ' : ''}${logLevel} ${logMessage}`;
 
   }
 
@@ -79,7 +181,7 @@ export class ServerLogger {
   * @param mode Either console or file.
   * @param level Current logging level.
   */
-  private canLog(mode: 'console'|'file', level: 'debug'|'info'|'notice'|'warn'|'error'): boolean {
+  public canLog(mode: 'console'|'file', level: 'debug'|'info'|'notice'|'warn'|'error'): boolean {
 
     if ( mode === 'console' ) {
 
@@ -95,81 +197,6 @@ export class ServerLogger {
       return this.config.logFileLevels.includes(level);
 
     }
-
-  }
-
-  /**
-  * Prints a message at debug level.
-  */
-  public debug(message: any, ...additionalMessages: any[]) {
-
-    const log = this.formatLog('debug', [message, ...additionalMessages]);
-
-    // Log to console
-    if ( this.canLog('console', 'debug') ) console.debug(log);
-
-    // Log to file
-    if ( this.canLog('file', 'debug') ) this.writer.writeToDisk(log);
-
-  }
-
-  /**
-  * Prints a message at info level.
-  */
-  public info(message: any, ...additionalMessages: any[]) {
-
-    const log = this.formatLog('info', [message, ...additionalMessages]);
-
-    // Log to console
-    if ( this.canLog('console', 'info') ) console.log(log);
-
-    // Log to file
-    if ( this.canLog('file', 'info') ) this.writer.writeToDisk(log);
-
-  }
-
-  /**
-  * Prints a message at notice level.
-  */
-  public notice(message: any, ...additionalMessages: any[]) {
-
-    const log = this.formatLog('notice', [message, ...additionalMessages]);
-
-    // Log to console
-    if ( this.canLog('console', 'notice') ) console.log(log);
-
-    // Log to file
-    if ( this.canLog('file', 'notice') ) this.writer.writeToDisk(log);
-
-  }
-
-  /**
-  * Prints a message at warn level.
-  */
-  public warn(message: any, ...additionalMessages: any[]) {
-
-    const log = this.formatLog('warn', [message, ...additionalMessages]);
-
-    // Log to console
-    if ( this.canLog('console', 'warn') ) console.warn(log);
-
-    // Log to file
-    if ( this.canLog('file', 'warn') ) this.writer.writeToDisk(log);
-
-  }
-
-  /**
-  * Prints a message at error level.
-  */
-  public error(message: any, ...additionalMessages: any[]) {
-
-    const log = this.formatLog('error', [message, ...additionalMessages]);
-
-    // Log to console
-    if ( this.canLog('console', 'error') ) console.error(log);
-
-    // Log to file
-    if ( this.canLog('file', 'error') ) this.writer.writeToDisk(log);
 
   }
 
