@@ -314,9 +314,57 @@ function installPredictive404(): void {
     });
 
     if ( matches ) next();
-    else new ServerError(`Route ${req.path} not found!`, 404, 'ROUTE_NOT_FOUND').respond(res);
+    else new ServerError(`Route ${getLogPath(req).path} not found!`, 404, 'ROUTE_NOT_FOUND').respond(res);
 
   });
+
+}
+
+function getLogPath(req) {
+
+  // Parse URL
+  const url = new URL(req.originalUrl);
+  const result = {
+    headers: undefined,
+    path: undefined
+  };
+
+  // Hide params based on config
+  for ( const param of url.searchParams.keys() ) {
+
+    if ( config.excludeQueryParamsInLogs.includes(param.toLowerCase()) )
+      url.searchParams.set(param, 'HIDDEN');
+
+  }
+
+  result.path = url.toString();
+
+  // Log headers
+  if ( config.logRequestHeaders ) {
+
+    // Hide headers based on config
+    const headers = _.clone(req.headers);
+
+    for ( const header of config.excludeHeadersInLogs ) {
+
+      if ( headers.hasOwnProperty(header) ) headers[header] = 'HIDDEN';
+
+    }
+
+    // Log headers
+    let headersLog = 'HEADERS';
+
+    for ( const header in headers ) {
+
+      headersLog += `\n${header} ${headers[header]}`;
+
+    }
+
+    result.headers = headersLog;
+
+  }
+
+  return result;
 
 }
 
@@ -408,44 +456,11 @@ for ( const name in routers ) {
     // Create route logger
     handlers.push((req, res, next) => {
 
-      // Parse URL
-      const url = new URL(req.originalUrl);
+      const url = getLogPath(req);
 
-      // Hide params based on config
-      for ( const param of url.searchParams.keys() ) {
+      if ( config.logRequestHeaders ) log.debug(url.headers);
 
-        if ( config.excludeQueryParamsInLogs.includes(param.toLowerCase()) )
-          url.searchParams.set(param, 'HIDDEN');
-
-      }
-
-      // Log headers
-      if ( config.logRequestHeaders ) {
-
-        // Hide headers based on config
-        const headers = _.clone(req.headers);
-
-        for ( const header of config.excludeHeadersInLogs ) {
-
-          if ( headers.hasOwnProperty(header) ) headers[header] = 'HIDDEN';
-
-        }
-
-        // Log headers
-        let headersLog = 'HEADERS';
-
-        for ( const header in headers ) {
-
-          headersLog += `\n${header} ${headers[header]}`;
-
-        }
-
-        log.debug(headersLog);
-
-      }
-
-      // Log URL
-      log.debug(req.method.toUpperCase(), url.toString());
+      log.debug(req.method.toUpperCase(), url.path);
 
       next();
 
@@ -492,7 +507,7 @@ if ( ! config.predictive404 ) {
 
   app.use('*', (req, res) => {
 
-  new ServerError(`Route ${req.path} not found!`, 404, 'ROUTE_NOT_FOUND').respond(res);
+  new ServerError(`Route ${getLogPath(req).path} not found!`, 404, 'ROUTE_NOT_FOUND').respond(res);
 
 });
 
