@@ -1,4 +1,4 @@
-export class ServerEvents {
+export class ServerEventManager {
 
   private __events: List<EventListeners> = {};
 

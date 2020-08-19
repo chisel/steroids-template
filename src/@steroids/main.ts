@@ -12,13 +12,13 @@ import serverConfig from '../config.json';
 import * as tsConfigPaths from 'tsconfig-paths';
 import paths from '../paths.json';
 import { ServerLogger, ServerLoggerCore } from './logger';
-import { ServerEvents } from './events';
+import { ServerEventManager } from './events';
 import { ServerSessionManager, ServerSessionManagerInternal } from './session';
+import { ServerError } from './error';
 import { RequestHandler } from 'express';
 import { Request, Response, NextFunction } from './models';
 
 import {
-  ServerError,
   BaseServerConfig,
   BasicModule,
   ModuleType,
@@ -67,14 +67,16 @@ config.excludeQueryParamsInLogs = config.excludeQueryParamsInLogs.map(q => q.toL
 declare global {
 
   const log: ServerLogger;
-  const events: ServerEvents;
+  const events: ServerEventManager;
   const session: ServerSessionManager;
+  const ServerError: ServerError;
 
 }
 
 (<any>global).log = new ServerLogger(new ServerLoggerCore(config));
-(<any>global).events = new ServerEvents();
+(<any>global).events = new ServerEventManager();
 (<any>global).session = new ServerSessionManagerInternal(!! config.cookieSecret);
+(<any>global).ServerError = ServerError;
 
 const app = express();
 const services: any = {};

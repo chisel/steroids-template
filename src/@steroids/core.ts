@@ -10,8 +10,6 @@ import {
   ValidationDefinition
 } from './models';
 
-import { Response } from 'express';
-
 import _ from 'lodash';
 
 export * from './models';
@@ -73,25 +71,25 @@ export namespace type {
   /**
   * String type comparison.
   */
-  export function string(value: any): boolean { return typeof value === 'string' }
+  export function String(value: any): boolean { return typeof value === 'string' }
   /**
   * Number type comparison.
   */
-  export function number(value: any): boolean { return typeof value === 'number'; }
+  export function Number(value: any): boolean { return typeof value === 'number'; }
   /**
   * Boolean type comparison.
   */
-  export function boolean(value: any): boolean { return typeof value === 'boolean'; }
+  export function Boolean(value: any): boolean { return typeof value === 'boolean'; }
   /**
   * Null type comparison.
   */
-  export function nil(value: any): boolean { return value === null; }
+  export function Null(value: any): boolean { return value === null; }
   /**
   * Array type comparison.
   * @param validator      A validator to apply to all items inside the array.
   * @param arrayValidator A validator to apply to the whole array (e.g. len.min).
   */
-  export function array(validator?: ValidatorFunction, arrayValidator?: ValidatorFunction): ValidatorFunction {
+  export function Array(validator?: ValidatorFunction, arrayValidator?: ValidatorFunction): ValidatorFunction {
 
     return (value: any): boolean|Error => {
 
@@ -125,7 +123,7 @@ export namespace type {
   * Enum type comparison.
   * @param enumerator An enumerator to validate the value against.
   */
-  export function inenum(enumerator: any): ValidatorFunction {
+  export function Enum(enumerator: any): ValidatorFunction {
 
     return (value: any): boolean => {
 
@@ -167,7 +165,7 @@ export function equalRef(ref: string): ValidatorFunction {
 * Validates a string against a given regular expression.
 * @param validators A rest argument of validators.
 */
-export function match(regex: RegExp) {
+export function match(regex: RegExp): ValidatorFunction {
 
   return (value: any): boolean => {
 
@@ -585,46 +583,3 @@ export function headers(validator: ValidationDefinition): ValidationRule { retur
 export function queries(validator: ValidationDefinition): ValidationRule { return { type: ValidationType.Query, validator: validator }; }
 export function body(validator: BodyValidationDefinition): ValidationRule { return { type: ValidationType.Body, validator: validator }; }
 export function custom(validator: AsyncValidatorFunction|ValidatorFunction): ValidationRule { return { type: ValidationType.Custom, validator: validator } };
-
-export class ServerError {
-
-  public readonly error = true;
-  public stack: string;
-
-  constructor(
-    public message: string,
-    public httpCode: number = 500,
-    public code: string = 'UNKOWN_ERROR'
-  ) { }
-
-  /**
-  * Returns a new ServerError from an Error object.
-  * @param error An error object.
-  * @param httpCode The HTTP status code to use when responding to requests.
-  * @param code An error code to override the error object's code (if any).
-  */
-  public static from(error: Error, httpCode: number = 500, code?: string): ServerError {
-
-    const serverError = new ServerError(error.message, httpCode || 500, code || (<any>error).code);
-
-    serverError.stack = error.stack;
-
-    return serverError;
-
-  }
-
-  /**
-  * Responds to request with current error.
-  * @param res An Express response object.
-  */
-  public respond(res: Response) {
-
-    res.status(this.httpCode).json({
-      error: this.error,
-      message: this.message,
-      code: this.code
-    });
-
-  }
-
-}

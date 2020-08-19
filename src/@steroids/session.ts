@@ -10,11 +10,11 @@ export class ServerSessionManager {
   * @param handler An event handler.
   */
   public on(event: 'created', handler: SessionHandlers['created']): this;
-  public on(event: 'claims:get', handler: SessionHandlers['claimsGet']): this;
-  public on(event: 'claims:set', handler: SessionHandlers['claimsSet']): this;
+  public on(event: 'claim:get', handler: SessionHandlers['claimGet']): this;
+  public on(event: 'claim:set', handler: SessionHandlers['claimSet']): this;
   public on(event: string, handler: (...args: any[]) => any|Promise<any>): this {
 
-    if ( ! ['created', 'claims:get', 'claims:set'].includes(event) ) {
+    if ( ! ['created', 'claim:get', 'claim:set'].includes(event) ) {
 
       log.error(`Event '${event}' does not exist on session!`);
       return this;
@@ -42,14 +42,14 @@ export class ServerSessionManager {
   */
   public setClaim(id: string, key: string, value: any): void|Promise<void> {
 
-    if ( ! this.__handlers.claimsSet ) {
+    if ( ! this.__handlers.claimSet ) {
 
-      log.warn(`Session event 'claims:set' has no handler assigned!`);
+      log.warn(`Session event 'claim:set' has no handler assigned!`);
       return;
 
     }
 
-    return this.__handlers.claimsSet(id, key, value);
+    return this.__handlers.claimSet(id, key, value);
 
   }
 
@@ -60,14 +60,14 @@ export class ServerSessionManager {
   */
   public getClaim(id: string, key: string): any|Promise<any> {
 
-    if ( ! this.__handlers.claimsSet ) {
+    if ( ! this.__handlers.claimSet ) {
 
-      log.warn(`Session event 'claims:get' has no handler assigned!`);
+      log.warn(`Session event 'claim:get' has no handler assigned!`);
       return;
 
     }
 
-    return this.__handlers.claimsGet(id, key);
+    return this.__handlers.claimGet(id, key);
 
   }
 
@@ -135,7 +135,7 @@ export class ServerSessionManagerInternal extends ServerSessionManager {
 interface SessionHandlers {
 
   created?: (id: string) => void|Promise<void>;
-  claimsGet?: (id: string, key: string) => any|Promise<any>;
-  claimsSet?: (id: string, key: string, value: any) => void|Promise<void>;
+  claimGet?: (id: string, key: string) => any|Promise<any>;
+  claimSet?: (id: string, key: string, value: any) => void|Promise<void>;
 
 }
