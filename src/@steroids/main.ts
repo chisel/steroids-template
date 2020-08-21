@@ -8,7 +8,7 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
 import { DateTime } from 'luxon';
-import serverConfig from '../config.json';
+import { config as serverConfig } from '../config';
 import * as tsConfigPaths from 'tsconfig-paths';
 import paths from '../paths.json';
 import { ServerLogger, ServerLoggerCore } from './logger';
@@ -19,6 +19,7 @@ import { RequestHandler } from 'express';
 import { Request, Response, NextFunction } from './models';
 
 import {
+  ServerConfig,
   BaseServerConfig,
   BasicModule,
   ModuleType,
@@ -56,7 +57,15 @@ const CONFIG_DEFAULT: BaseServerConfig = {
 };
 
 // Override the config file
-const config = _.assign(CONFIG_DEFAULT, serverConfig);
+const config: ServerConfig = _.assign(CONFIG_DEFAULT, serverConfig);
+
+// Testing mode
+if ( process.env.STEROIDS_TEST ) {
+
+  config.writeLogsToFile = false;
+  config.port = 8123;
+
+}
 
 // Sanitize config
 config.excludeHeadersInLogs = config.excludeHeadersInLogs.map(h => h.toLowerCase());

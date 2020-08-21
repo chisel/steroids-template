@@ -6,7 +6,7 @@ import chalk from 'chalk';
 import stripAnsi from 'strip-ansi';
 import fs from 'fs-extra';
 import path from 'path';
-import { ServerConfig } from './models';
+import { BaseServerConfig } from './models';
 
 export class ServerLogger {
 
@@ -106,7 +106,7 @@ export class ServerLoggerCore {
 
   public writer: LogWriter;
 
-  constructor(public config: ServerConfig) {
+  constructor(public config: BaseServerConfig) {
 
     // Reset timezone to local if it is invalid
     if ( ! DateTime.local().setZone(config.timezone).isValid ) {
@@ -211,7 +211,7 @@ class LogWriter {
   private logFiles: { filename: string; date: DateTime; }[] = [];
 
   constructor(
-    private config: ServerConfig,
+    private config: BaseServerConfig,
     private onError: (error: Error) => void,
     private onMessage: (message: string) => void
   ) {

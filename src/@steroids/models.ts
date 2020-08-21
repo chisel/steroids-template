@@ -1,8 +1,8 @@
-import { ServerConfig } from '../config.model';
-export { ServerConfig } from '../config.model';
 import { CorsOptions } from 'cors';
 export { Response, NextFunction } from 'express';
 import { Request as OriginalRequest } from 'express';
+import { config } from '../config';
+export type ServerConfig = typeof config & BaseServerConfig;
 
 export interface BaseServerConfig {
 
@@ -101,19 +101,19 @@ export interface ModuleMetadata {
 
 export interface OnInjection {
 
-  onInjection: (services: any) => void|Promise<void>;
+  onInjection(services: any): void|Promise<void>;
 
 }
 
 export interface OnConfig {
 
-  onConfig: (config: ServerConfig) => void|Promise<void>;
+  onConfig(config: ServerConfig): void|Promise<void>;
 
 }
 
 export interface OnInit {
 
-  onInit: () => void|Promise<void>;
+  onInit(): void|Promise<void>;
 
 }
 

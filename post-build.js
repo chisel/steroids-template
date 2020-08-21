@@ -4,9 +4,6 @@ const uglify = require('uglify-es');
 const _ = require('lodash');
 const package = require('./package.json');
 
-// Copy config.json to dist
-fs.copySync(path.join(__dirname, 'src', 'config.json'), path.join(__dirname, 'dist', 'config.json'));
-
 // Copy all assets
 if ( package && package.assets && typeof package.assets === 'object' && package.assets.constructor === Array ) {
 

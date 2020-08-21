@@ -7,7 +7,7 @@
     "build": "node pre-build.js && ./node_modules/typescript/bin/tsc --build && node post-build.js",
     "launch": "node dist/@steroids/main.js",
     "start": "node pre-build.js && ./node_modules/typescript/bin/tsc --build && node post-build.js && node dist/@steroids/main.js",
-    "docs": "./node_modules/typedoc/bin/typedoc --out docs src",
+    "docs": "./node_modules/typedoc/bin/typedoc --out docs/dev src",
     "test": "node pre-test.js && ./node_modules/typescript/bin/tsc -p test/tsconfig.json && ./node_modules/mocha/bin/mocha ./test/dist/main.spec.js"
   },
   "repository": {
@@ -42,7 +42,6 @@
     "fs-extra": "^8.1.0",
     "lodash": "^4.17.19",
     "luxon": "^1.21.3",
-    "mocha": "^8.1.1",
     "strip-ansi": "^6.0.0",
     "tsconfig-paths": "^3.9.0"
   },
@@ -57,6 +56,7 @@
     "@types/luxon": "^1.21.0",
     "@types/mocha": "^5.2.7",
     "@types/node": "^12.12.16",
+    "mocha": "^8.1.1",
     "typedoc": "^0.15.4",
     "typescript": "^3.7.3",
     "uglify-es": "^3.3.9"

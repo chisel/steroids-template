@@ -3,8 +3,6 @@ import fs from 'fs-extra';
 import _ from 'lodash';
 import child from 'child_process';
 
-const serverConfigPath = path.resolve(__dirname, '..', '..', 'dist', 'config.json');
-let originalServerConfig = require(serverConfigPath);
 let serverProcess: child.ChildProcess;
 
 // Reconfigure the server for testing
@@ -12,14 +10,8 @@ before(function(done) {
 
   this.timeout(5000);
 
-  // Test server config
-  const testServerConfig = _.assign(_.clone(originalServerConfig), {
-    port: 8000,
-    writeLogsToFile: false
-  });
-
-  // Update server config
-  fs.writeFileSync(serverConfigPath, JSON.stringify(testServerConfig, null, 2));
+  // Activate test mode
+  process.env.STEROIDS_TEST = 'active';
 
   // Run the server
   serverProcess = child.spawn('node', ['@steroids/main'], {
@@ -51,7 +43,7 @@ describe('Server', function() {
       if ( ! file.name.match(/^.+\.spec\.js$/) || file.name === 'main.spec.js') continue;
 
       // Import test
-      require(path.resolve(__dirname, prefix, file.name));
+      import(path.resolve(__dirname, prefix, file.name));
 
     }
     // If directory
@@ -70,13 +62,9 @@ describe('Server', function() {
 
 });
 
-// Test clean up
+// Kill the server
 after(function() {
 
-  // Kill the server
   serverProcess.kill();
-
-  // Reconfigure the server back to original
-  fs.writeFileSync(serverConfigPath, JSON.stringify(originalServerConfig, null, 2));
 
 });
