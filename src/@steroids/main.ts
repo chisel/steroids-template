@@ -163,40 +163,51 @@ async function initializeModules(modules: any) {
   for ( const name in modules ) {
 
     const module = modules[name];
+    const moduleType = module.__metadata.type === ModuleType.Service ? 'service' : 'router';
 
     if ( module.onInjection && typeof module.onInjection === 'function' ) {
 
-      events.emitOnce(`${module.__metadata.name}-${module.__metadata.type === ModuleType.Service ? 'service' : 'router'}:inject:before`);
+      const componentServices = _.clone(services);
 
-      await module.onInjection(services);
+      events.emitOnce(`${moduleType}:inject:before`, componentServices);
+      events.emitOnce(`${module.__metadata.name}-${moduleType}:inject:before`, componentServices);
 
-      events.emitOnce(`${module.__metadata.name}-${module.__metadata.type === ModuleType.Service ? 'service' : 'router'}:inject:after`);
+      await module.onInjection(componentServices);
 
-      log.debug(`Services injected into ${module.__metadata.type === ModuleType.Service ? 'service' : 'router'} "${module.__metadata.name}"`);
+      events.emitOnce(`${module.__metadata.name}-${moduleType}:inject:after`, componentServices);
+      events.emitOnce(`${moduleType}:inject:after`);
+
+      log.debug(`Services injected into ${moduleType} "${module.__metadata.name}"`);
 
     }
 
     if ( module.onConfig && typeof module.onConfig === 'function' ) {
 
-      events.emitOnce(`${module.__metadata.name}-${module.__metadata.type === ModuleType.Service ? 'service' : 'router'}:config:before`);
+      const componentConfig = _.cloneDeep(config);
 
-      await module.onConfig(_.cloneDeep(config));
+      events.emitOnce(`${moduleType}:config:before`, componentConfig);
+      events.emitOnce(`${module.__metadata.name}-${moduleType}:config:before`, componentConfig);
 
-      events.emitOnce(`${module.__metadata.name}-${module.__metadata.type === ModuleType.Service ? 'service' : 'router'}:config:after`);
+      await module.onConfig(componentConfig);
 
-      log.debug(`Config injected into ${module.__metadata.type === ModuleType.Service ? 'service' : 'router'} "${module.__metadata.name}"`);
+      events.emitOnce(`${module.__metadata.name}-${moduleType}:config:after`, componentConfig);
+      events.emitOnce(`${moduleType}:config:after`);
+
+      log.debug(`Config injected into ${moduleType} "${module.__metadata.name}"`);
 
     }
 
     if ( module.onInit && typeof module.onInit === 'function' ) {
 
-      events.emitOnce(`${module.__metadata.name}-${module.__metadata.type === ModuleType.Service ? 'service' : 'router'}:init:before`);
+      events.emitOnce(`${moduleType}:init:before`);
+      events.emitOnce(`${module.__metadata.name}-${moduleType}:init:before`);
 
       await module.onInit();
 
-      events.emitOnce(`${module.__metadata.name}-${module.__metadata.type === ModuleType.Service ? 'service' : 'router'}:init:after`);
+      events.emitOnce(`${module.__metadata.name}-${moduleType}:init:after`);
+      events.emitOnce(`${moduleType}:init:after`);
 
-      log.debug(`${module.__metadata.type === ModuleType.Service ? 'Service' : 'Router'} "${module.__metadata.name}" was initialized`);
+      log.debug(`${_.startCase(moduleType)} "${module.__metadata.name}" was initialized`);
 
     }
 
@@ -530,6 +541,7 @@ if ( ! config.predictive404 ) {
 app.use((error, req, res, next) => {
 
   log.error('An unknown error has occured:', error);
+  events.emit('error', error);
 
   if ( ! res.headerSent ) new ServerError('An unknown error has occured!').respond(res);
 
@@ -550,6 +562,7 @@ initializeModules(services)
 .catch(error => {
 
   log.error('Could not initialize modules due to an error:', error);
+  events.emit('error', error);
 
 })
 .then(() => {
@@ -557,8 +570,18 @@ initializeModules(services)
   // Start the server
   app.listen(config.port, (error: Error) => {
 
-    if ( error ) log.error('Could not start the server due to an error:', error);
-    else log.notice(`Server started on port ${config.port}`);
+    if ( error ) {
+
+      log.error('Could not start the server due to an error:', error);
+      events.emit('error', error);
+
+    }
+    else {
+
+      log.notice(`Server started on port ${config.port}`);
+      events.emit('launch', config.port);
+
+    }
 
   });
 
