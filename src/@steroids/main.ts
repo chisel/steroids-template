@@ -89,7 +89,7 @@ declare global {
 (<any>global).ServerError = ServerError;
 
 const app = express();
-const services: any = {};
+let services: any = {};
 let routers: any = {};
 
 function installModule(filename: string): void {
@@ -159,11 +159,10 @@ function scanDirRec(dir: string): string[] {
 
 }
 
-async function initializeModules(modules: any) {
+async function initializeModules(modules: any[]) {
 
-  for ( const name in modules ) {
+  for ( const module of modules ) {
 
-    const module = modules[name];
     const moduleType = module.__metadata.type === ModuleType.Service ? 'service' : 'router';
 
     if ( module.onInjection && typeof module.onInjection === 'function' ) {
@@ -433,9 +432,7 @@ routers = _.orderBy(routers, (router: BasicModule) => router.__metadata.priority
 let predictive404Installed: boolean = false;
 
 // Install routes
-for ( const name in routers ) {
-
-  const router: BasicModule = routers[name];
+for ( const router of routers ) {
 
   // Install predictive 404 handler
   if ( config.predictive404 && config.predictive404Priority > router.__metadata.priority && ! predictive404Installed ) {
@@ -552,6 +549,9 @@ log.debug('Error handler installed');
 
 // Misc
 app.disable('x-powered-by');
+
+// Sort services based on priority
+services = _.orderBy(services, (service: BasicModule) => service.__metadata.priority, ['desc']);
 
 // Initialize all modules
 initializeModules(services)

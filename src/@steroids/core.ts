@@ -20,6 +20,7 @@ export function Service(config: ModuleDecoratorArgs) {
 
     target.prototype.__metadata = {
       name: config.name,
+      priority: config.priority || 0,
       type: ModuleType.Service
     };
 

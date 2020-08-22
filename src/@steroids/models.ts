@@ -34,13 +34,13 @@ export interface Request extends OriginalRequest {
 export interface ModuleDecoratorArgs {
 
   name: string;
+  priority?: number;
 
 }
 
 export interface RouterDecoratorArgs extends ModuleDecoratorArgs {
 
   routes: RouteDefinition[];
-  priority?: number;
   corsPolicy?: CORSPolicy;
 
 }
