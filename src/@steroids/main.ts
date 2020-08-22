@@ -53,6 +53,7 @@ const CONFIG_DEFAULT: BaseServerConfig = {
   excludeHeadersInLogs: [],
   logRequestHeaders: false,
   excludeQueryParamsInLogs: [],
+  sessionManagement: false,
   cookieSecret: undefined
 };
 
@@ -84,7 +85,7 @@ declare global {
 
 (<any>global).log = new ServerLogger(new ServerLoggerCore(config));
 (<any>global).events = new ServerEventManager();
-(<any>global).session = new ServerSessionManagerInternal(!! config.cookieSecret);
+(<any>global).session = new ServerSessionManagerInternal(!! config.sessionManagement, !! config.cookieSecret);
 (<any>global).ServerError = ServerError;
 
 const app = express();
@@ -424,7 +425,7 @@ app.use((error, req, res, next) => {
 });
 
 // Install session manager middleware
-app.use((<ServerSessionManagerInternal>session).middleware);
+if ( config.sessionManagement ) app.use((<ServerSessionManagerInternal>session).middleware);
 
 // Sort routers based on priority
 routers = _.orderBy(routers, (router: BasicModule) => router.__metadata.priority, ['desc']);

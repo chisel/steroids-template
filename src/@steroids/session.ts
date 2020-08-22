@@ -4,6 +4,10 @@ export class ServerSessionManager {
 
   protected __handlers: SessionHandlers = {};
 
+  constructor(
+    protected __enabled: boolean
+  ) { }
+
   /**
   * Assigns a handler to a session event.
   * @param event A session event name.
@@ -13,6 +17,13 @@ export class ServerSessionManager {
   public on(event: 'claim:get', handler: SessionHandlers['claimGet']): this;
   public on(event: 'claim:set', handler: SessionHandlers['claimSet']): this;
   public on(event: string, handler: (...args: any[]) => any|Promise<any>): this {
+
+    if ( ! this.__enabled ) {
+
+      log.warn(`Session management is disabled!`);
+      return this;
+
+    }
 
     if ( ! ['created', 'claim:get', 'claim:set'].includes(event) ) {
 
@@ -42,6 +53,13 @@ export class ServerSessionManager {
   */
   public setClaim(id: string, key: string, value: any): void|Promise<void> {
 
+    if ( ! this.__enabled ) {
+
+      log.warn(`Session management is disabled!`);
+      return;
+
+    }
+
     if ( ! this.__handlers.claimSet ) {
 
       log.warn(`Session event 'claim:set' has no handler assigned!`);
@@ -60,6 +78,13 @@ export class ServerSessionManager {
   */
   public getClaim(id: string, key: string): any|Promise<any> {
 
+    if ( ! this.__enabled ) {
+
+      log.warn(`Session management is disabled!`);
+      return;
+
+    }
+
     if ( ! this.__handlers.claimSet ) {
 
       log.warn(`Session event 'claim:get' has no handler assigned!`);
@@ -76,10 +101,11 @@ export class ServerSessionManager {
 export class ServerSessionManagerInternal extends ServerSessionManager {
 
   constructor(
+    __enabled: boolean,
     private __signed: boolean
   ) {
 
-    super();
+    super(__enabled);
 
   }
 

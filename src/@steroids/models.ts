@@ -20,6 +20,7 @@ export interface BaseServerConfig {
   excludeHeadersInLogs: string[];
   logRequestHeaders: boolean;
   fileUploadLimit: string;
+  sessionManagement: boolean;
   cookieSecret: string;
 
 }
