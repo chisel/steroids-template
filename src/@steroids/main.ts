@@ -167,7 +167,14 @@ async function initializeModules(modules: any[]) {
 
     if ( module.onInjection && typeof module.onInjection === 'function' ) {
 
-      const componentServices = _.clone(services);
+      // Remap services which is an array at this point (due to priority-based sort)
+      const componentServices = _.reduce(services, (map, service) => {
+
+        map[service.__metadata.name] = service;
+
+        return map;
+
+      }, {});
 
       events.emitOnce(`${moduleType}:inject:before`, componentServices);
       events.emitOnce(`${module.__metadata.name}-${moduleType}:inject:before`, componentServices);
