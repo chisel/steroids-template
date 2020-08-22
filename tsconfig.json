@@ -21,7 +21,6 @@
     ],
     "paths": {
       "@steroids/core": ["./src/@steroids/core"],
-      "@steroids/models": ["./src/@steroids/models"],
       "@steroids/router/*": ["./src/routers/*.router"],
       "@steroids/service/*": ["./src/services/*.service"]
     }

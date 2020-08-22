@@ -30,4 +30,4 @@ for ( const alias in tsconfigPaths ) {
 
 }
 
-fs.writeFileSync(path.resolve(__dirname, 'src', 'paths.json'), JSON.stringify(tsconfigPaths, null, 2));
+fs.writeFileSync(path.resolve(__dirname, 'src', '@steroids', 'paths.json'), JSON.stringify(tsconfigPaths, null, 2));

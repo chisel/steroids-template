@@ -10,7 +10,7 @@ import cookieParser from 'cookie-parser';
 import { DateTime } from 'luxon';
 import { config as serverConfig } from '../config';
 import * as tsConfigPaths from 'tsconfig-paths';
-import paths from '../paths.json';
+import paths from './paths.json';
 import { ServerLogger, ServerLoggerCore } from './logger';
 import { ServerEventManager } from './events';
 import { ServerSessionManager, ServerSessionManagerInternal } from './session';
