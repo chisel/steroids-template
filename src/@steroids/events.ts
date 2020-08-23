@@ -90,7 +90,7 @@ export class ServerEventManager {
   /**
   * Removes a listener from an event.
   * @param event An event name.
-  * @param listener The listener to remove.
+  * @param listener A listener to remove.
   */
   public off(event: string, listener: EventListener): this {
 
