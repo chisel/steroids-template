@@ -1,5 +1,6 @@
 ## service:inject:before
 
+**Type:** Event  
 **Arguments:**
   - services  
     **Type:** Object  

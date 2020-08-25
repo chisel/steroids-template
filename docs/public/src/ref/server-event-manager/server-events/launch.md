@@ -1,5 +1,6 @@
 ## launch
 
+**Type:** Event  
 **Arguments:**
   - port  
     **Type:** number  

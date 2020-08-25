@@ -177,18 +177,18 @@ export function match(regex: RegExp): ValidatorFunction {
 }
 
 /**
-* Validates an object against the given flat body validator (useful for validating arrays of objects).
-* @param bodyValidator A flat body validator.
+* Validates an object against the given validation definition object (useful for validating arrays of objects).
+* @param validationDefinition A validation definition object.
 */
-export function sub(bodyValidator: ValidationDefinition): ValidatorFunction {
+export function sub(validationDefinition: ValidationDefinition): ValidatorFunction {
 
   return (value: any): boolean => {
 
     if ( ! value || typeof value !== 'object' || value.constructor !== Object ) return false;
 
-    for ( const key of _.keys(bodyValidator) ) {
+    for ( const key of _.keys(validationDefinition) ) {
 
-      if ( ! value.hasOwnProperty(key) || ! bodyValidator[key](value[key]) ) return false;
+      if ( ! value.hasOwnProperty(key) || ! validationDefinition[key](value[key]) ) return false;
 
     }
 

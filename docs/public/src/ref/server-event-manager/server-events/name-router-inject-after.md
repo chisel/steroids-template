@@ -1,5 +1,6 @@
 ## NAME-router:inject:after
 
+**Type:** Event  
 **Arguments:**
   - services  
     **Type:** Object  

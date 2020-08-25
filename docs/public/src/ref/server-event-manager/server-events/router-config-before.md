@@ -1,5 +1,6 @@
 ## router:config:before
 
+**Type:** Event  
 **Arguments:**
   - config  
     **Type:** [ServerConfig](../../serverconfig)  

@@ -1,5 +1,6 @@
 ## error
 
+**Type:** Event  
 **Arguments:**
   - error  
     **Type:** Error  

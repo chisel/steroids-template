@@ -1,5 +1,6 @@
 ## NAME-router:config:after
 
+**Type:** Event  
 **Arguments:**
   - config  
     **Type:** [ServerConfig](../../serverconfig)  

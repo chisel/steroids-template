@@ -5,7 +5,7 @@
   - ref  
     **Type:** string  
     **Required:** Yes  
-    **Description:** A reference path to resolve from `rawValues` where child nodes are separated by `.`.
+    **Description:** A reference path to resolve from `rawValues` where child nodes are separated by `.` (e.g. `name.first`).
   - rawValues  
     **Type:** any  
     **Required:** Yes  

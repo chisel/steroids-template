@@ -1,5 +1,6 @@
 ## NAME-service:config:after
 
+**Type:** Event  
 **Arguments:**
   - config  
     **Type:** [ServerConfig](../../serverconfig)  

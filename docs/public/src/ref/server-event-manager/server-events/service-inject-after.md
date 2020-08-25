@@ -1,5 +1,6 @@
 ## service:inject:after
 
+**Type:** Event  
 **Arguments:**
   - services  
     **Type:** Object  

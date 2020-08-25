@@ -127,11 +127,11 @@
         "ref/server-session-manager/set-claim.md",
         "ref/server-session-manager/get-claim.md"
       ], "sub": [
-        { "title": "Events", "content": [
-          "ref/server-session-manager/events/index.md",
-          "ref/server-session-manager/events/created.md",
-          "ref/server-session-manager/events/claim-set.md",
-          "ref/server-session-manager/events/claim-get.md"
+        { "title": "Session Events", "content": [
+          "ref/server-session-manager/session-events/index.md",
+          "ref/server-session-manager/session-events/created.md",
+          "ref/server-session-manager/session-events/claim-set.md",
+          "ref/server-session-manager/session-events/claim-get.md"
         ]}
       ]},
       { "title": "ServerEventManager", "content": [
