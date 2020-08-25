@@ -136,13 +136,13 @@ export interface ValidationRule {
 
 export interface BodyValidationDefinition {
 
-  [key: string]: ValidatorFunction|BodyValidationDefinition;
+  [key: string]: AsyncValidatorFunction|ValidatorFunction|BodyValidationDefinition;
 
 }
 
 export interface ValidationDefinition {
 
-  [key: string]: ValidatorFunction;
+  [key: string]: AsyncValidatorFunction|ValidatorFunction;
 
 }
 
