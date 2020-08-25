@@ -32,4 +32,4 @@ The following built-in factory methods are available to import from `@steroids/c
   - [or(...validators)](#orvalidators)
   - [not(validator)](#notvalidator)
   - [opt(validator)](#optvalidator)
-  - [sub(validationDefinition)](#subvalidationdefinition)
+  - [sub(validationDefinition, localRefs)](#subvalidationdefinition-localrefs)

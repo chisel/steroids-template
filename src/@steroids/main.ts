@@ -1,3 +1,5 @@
+import 'source-map-support/register';
+
 // This script builds the app and starts the server
 import _ from 'lodash';
 import fs from 'fs-extra';
@@ -352,7 +354,7 @@ function installPredictive404(): void {
 function getLogPath(req) {
 
   // Parse URL
-  const url = new URL(req.originalUrl);
+  const url = new URL(`${req.protocol}://${req.get('host')}${req.originalUrl}`);
   const result = {
     headers: undefined,
     path: undefined

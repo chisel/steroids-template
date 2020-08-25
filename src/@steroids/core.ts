@@ -179,16 +179,17 @@ export function match(regex: RegExp): ValidatorFunction {
 /**
 * Validates an object against the given validation definition object (useful for validating arrays of objects).
 * @param validationDefinition A validation definition object.
+* @param localRefs Determines if references should be resolved from the target value or the original raw values object.
 */
-export function sub(validationDefinition: ValidationDefinition): ValidatorFunction {
+export function sub(validationDefinition: ValidationDefinition, localRefs?: boolean): ValidatorFunction {
 
-  return (value: any): boolean => {
+  return (value: any, rawValues?: any): boolean => {
 
     if ( ! value || typeof value !== 'object' || value.constructor !== Object ) return false;
 
     for ( const key of _.keys(validationDefinition) ) {
 
-      if ( ! value.hasOwnProperty(key) || ! validationDefinition[key](value[key]) ) return false;
+      if ( ! value.hasOwnProperty(key) || ! validationDefinition[key](value[key], localRefs ? value : rawValues) ) return false;
 
     }
 
@@ -204,13 +205,13 @@ export function sub(validationDefinition: ValidationDefinition): ValidatorFuncti
 */
 export function or(...validators: Array<ValidatorFunction>): ValidatorFunction {
 
-  return (value: any): boolean|Error => {
+  return (value: any, rawValues?: any): boolean|Error => {
 
     let orCheck: boolean = false;
 
     for ( const validator of validators ) {
 
-      const result = validator(value);
+      const result = validator(value, rawValues);
 
       orCheck = orCheck || (typeof result === 'boolean' ? result : false);
 
@@ -228,11 +229,11 @@ export function or(...validators: Array<ValidatorFunction>): ValidatorFunction {
 */
 export function and(...validators: Array<ValidatorFunction>): ValidatorFunction {
 
-  return (value: any): boolean|Error => {
+  return (value: any, rawValues?: any): boolean|Error => {
 
     for ( const validator of validators ) {
 
-      const result = validator(value);
+      const result = validator(value, rawValues);
 
       if ( result === false ) return false;
       if ( result instanceof Error ) return result;
@@ -251,9 +252,9 @@ export function and(...validators: Array<ValidatorFunction>): ValidatorFunction 
 */
 export function not(validator: ValidatorFunction): ValidatorFunction {
 
-  return (value: any): boolean|Error => {
+  return (value: any, rawValues?: any): boolean|Error => {
 
-    const result = validator(value);
+    const result = validator(value, rawValues);
 
     return result !== true;
 
@@ -267,9 +268,9 @@ export function not(validator: ValidatorFunction): ValidatorFunction {
 */
 export function opt(validator: ValidatorFunction): ValidatorFunction {
 
-  return (value: any): boolean|Error => {
+  return (value: any, rawValues?: any): boolean|Error => {
 
-    return value === undefined ? true : validator(value);
+    return value === undefined ? true : validator(value, rawValues);
 
   };
 
